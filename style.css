@@ -75,3 +75,30 @@ html[data-app-mode=true][data-browser-active=true] #addressbarBlock{height:58px;
 
 html[data-effect-depth=deep] .ambient-layer{opacity:.58}html[data-effect-depth=vivid] .ambient-layer{opacity:1}html[data-low-power=true] .ambient-layer{filter:brightness(var(--effect-brightness,1))}html[data-performance=true] .ambient-layer{filter:none!important}html[data-rgb=true][data-rgb-cursor=true] .custom-cursor:not([data-style=rgb]) .cursor-ring{animation:rgbButton var(--rgb-speed) linear infinite}
 html[data-rgb=true][data-rgb-mode=pulse] .hero-card h1,html[data-rgb=true][data-rgb-mode=pulse] .go-button{animation-direction:alternate;animation-timing-function:ease-in-out}html[data-rgb=true][data-rgb-mode=wave] .hero-card h1{animation-duration:calc(var(--rgb-speed)*.72)}
+
+/* v7.1 App Inventor ultra-compact browse bar.
+   Home remains the full customizable page; after NAVIGATE only the address/navigation bar is rendered. */
+html[data-app-mode=true][data-browser-active=true] body{min-height:0;overflow:hidden}
+html[data-app-mode=true][data-browser-active=true] .background-layer,
+html[data-app-mode=true][data-browser-active=true] .ambient-layer{display:none!important}
+html[data-app-mode=true][data-browser-active=true] .app-shell:not([data-layout-editing=true]){
+  display:block;width:100%;margin:0;padding:3px;min-height:0;height:52px;overflow:hidden
+}
+html[data-app-mode=true][data-browser-active=true] #addressbarBlock{
+  height:46px;display:block!important;border-radius:12px;padding:3px
+}
+html[data-app-mode=true][data-browser-active=true] .address-form{gap:3px}
+html[data-app-mode=true][data-browser-active=true] .nav-cluster{gap:1px}
+html[data-app-mode=true][data-browser-active=true] .nav-button{
+  width:30px;height:32px;min-height:32px;border-radius:9px
+}
+html[data-app-mode=true][data-browser-active=true] .omnibox-wrap,
+html[data-app-mode=true][data-browser-active=true] .omnibox{min-height:32px}
+html[data-app-mode=true][data-browser-active=true] .omnibox{border-radius:10px;padding-left:31px;padding-right:30px}
+html[data-app-mode=true][data-browser-active=true] .omnibox-icon{left:10px}
+html[data-app-mode=true][data-browser-active=true] .go-button{min-height:32px;padding:0 10px;border-radius:9px}
+/* Keep Home reachable in the compact App Inventor bar even on narrow phones. */
+@media(max-width:460px){
+  html[data-app-mode=true][data-browser-active=true] .nav-cluster #homeButton{display:grid}
+  html[data-app-mode=true][data-browser-active=true] .nav-cluster #forwardButton{display:none}
+}

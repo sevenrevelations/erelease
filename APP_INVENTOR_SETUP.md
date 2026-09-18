@@ -121,3 +121,8 @@ Performance Mode disables the decorative particle canvas, custom cursor renderin
 Keep `index.html` at the repository root, then enable:
 
 Settings → Pages → Deploy from a branch → `main` → `/ (root)`.
+
+## v7.1 compact browse bar
+When handling `NAVIGATE|...`, set `WebViewer_UI.Height` to **52** (instead of 100/74), then show `WebViewer_Browser` and navigate it.
+When handling `HOME`, hide `WebViewer_Browser` and set `WebViewer_UI.Height` to **-2** (Fill Parent).
+The web UI automatically detects an active browser URL and hides every homepage widget except the address/navigation bar. Home stays available on narrow phone screens.
