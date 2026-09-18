@@ -1,128 +1,277 @@
-# blobby.vip + MIT App Inventor setup
+# blobby.vip v8 — MIT App Inventor setup
 
-blobby.vip is the customizable **home/controller UI**. It does not render browser tabs and it does not iframe external websites. MIT App Inventor owns the actual browsing WebViewer(s).
+blobby.vip remains the **full-screen home/new-tab page**. After navigation, the UI WebViewer collapses into compact browser chrome containing tabs, navigation, the address bar, and (optionally) bookmarks. The actual website still loads in one separate `WebViewer_Browser`.
 
-JavaScript in blobby.vip sends commands through:
+This design intentionally uses **one real browser WebViewer**. Tabs are lightweight virtual tabs in blobby.vip, which keeps the AIA simple and avoids the memory cost of one Android WebView per tab.
 
-```javascript
-window.AppInventor.setWebViewString(...)
-```
+## Designer
 
-## Recommended Designer structure
-
-Create:
-
-1. `VerticalArrangement_Main`
-   - Width: Fill parent
-   - Height: Fill parent
-2. `WebViewer_UI`
-   - HomeUrl: your GitHub Pages blobby.vip URL
-   - Width: Fill parent
-   - Height: Fill parent while on the blobby.vip home screen
-3. `WebViewer_Browser`
-   - Width: Fill parent
-   - Height: Fill parent
-   - Visible: false initially
-
-If you add native App Inventor tabs later, the active tab can select which browsing WebViewer/state receives these commands. blobby.vip itself does not create, close, or switch tabs.
-
-## Controller behavior
-
-On the home screen, `WebViewer_UI` fills the screen so the user can see the customizable title, effects, shortcuts, clock, recent sites, and full-screen grid layout.
-
-After a website opens, blobby.vip switches internally to its compact controller view. In App Inventor:
-
-- shrink `WebViewer_UI` to roughly **70–76 px**
-- show the active `WebViewer_Browser` below it
-
-Opening Settings or Layout Edit sends `EXPAND_UI`, allowing App Inventor to temporarily make the UI WebViewer full-screen. Closing those surfaces sends `RESTORE_UI`.
-
-## Messages sent from blobby.vip
-
-| Message | App Inventor action |
-|---|---|
-| `NAVIGATE|https://example.com/` | Show the active browser WebViewer and call `GoToUrl(url)` |
-| `BACK|https://target.example/` | Call `GoToUrl(target)` on the active browser WebViewer |
-| `FORWARD|https://target.example/` | Call `GoToUrl(target)` on the active browser WebViewer |
-| `REFRESH` | Reload the active browser WebViewer |
-| `HOME` or `SHOW_HOME` | Hide browser content and expand `WebViewer_UI` |
-| `OPEN_EXTERNAL|url` | Optional: open the URL using Android's system browser |
-| `EXPAND_UI|settings` | Hide browser content and make `WebViewer_UI` Fill parent |
-| `EXPAND_UI|layout` | Same; the v7 **20 × 14** editor needs the full screen |
-| `RESTORE_UI|browser` | Shrink `WebViewer_UI` to the compact controller height and show browser content |
-| `RESTORE_UI|home` | Keep `WebViewer_UI` full screen |
-
-There are intentionally no `NEW_TAB`, `CLOSE_TAB`, or `SWITCH_TAB` messages in this UI.
-
-## WebViewStringChange logic
-
-Pseudo-block logic:
+Use this structure:
 
 ```text
-when WebViewer_UI.WebViewStringChange(value)
-
-if value starts with "NAVIGATE|"
-    set url to text after "NAVIGATE|"
-    set WebViewer_UI.Height to 74 px
-    set WebViewer_Browser.Visible to true
-    call WebViewer_Browser.GoToUrl(url)
-
-else if value starts with "BACK|"
-    call WebViewer_Browser.GoToUrl(text after "BACK|")
-
-else if value starts with "FORWARD|"
-    call WebViewer_Browser.GoToUrl(text after "FORWARD|")
-
-else if value = "REFRESH"
-    call WebViewer_Browser.Reload
-
-else if value = "HOME" or value = "SHOW_HOME"
-    set WebViewer_Browser.Visible to false
-    set WebViewer_UI.Height to Fill parent
-
-else if value starts with "EXPAND_UI|"
-    set WebViewer_Browser.Visible to false
-    set WebViewer_UI.Height to Fill parent
-
-else if value = "RESTORE_UI|browser"
-    set WebViewer_UI.Height to 74 px
-    set WebViewer_Browser.Visible to true
-
-else if value = "RESTORE_UI|home"
-    set WebViewer_Browser.Visible to false
-    set WebViewer_UI.Height to Fill parent
+Screen1
+└── MainContainer (VerticalArrangement)
+    ├── WebViewer_UI
+    └── WebViewer_Browser
 ```
 
-## Sync the actual URL back to blobby.vip
+Recommended starting properties:
 
-When the active browsing WebViewer finishes loading:
+### MainContainer
+- Width: Fill parent
+- Height: Fill parent
+
+### WebViewer_UI
+- Width: Fill parent
+- Height: Fill parent
+- Visible: true
+- HomeUrl: your GitHub Pages blobby.vip URL
+
+### WebViewer_Browser
+- Width: Fill parent
+- Height: Fill parent
+- Visible: false
+
+Do **not** put external websites in an iframe. `WebViewer_Browser` loads them directly.
+
+---
+
+## Bridge messages sent by blobby.vip
 
 ```text
-when WebViewer_Browser.PageLoaded(url)
-    set WebViewer_UI.WebViewString to join "URL|" url
+NAVIGATE|https://example.com/
+BACK|https://previous-url.example/
+FORWARD|https://next-url.example/
+REFRESH
+HOME
+OPEN_EXTERNAL|https://example.com/
+UI_HEIGHT|72
+UI_HEIGHT|100
+EXPAND_UI|settings
+RESTORE_UI|browser
+RESTORE_UI|home
 ```
 
-If your native tab system changes the active tab, send that tab's current URL through the same `URL|...` message so blobby.vip's address bar stays synchronized.
+The exact `UI_HEIGHT` number is calculated by the webpage. It changes automatically when compact tabs or the bookmarks bar change. Do not hard-code one large browsing height once `UI_HEIGHT` is wired up.
 
-## Performance recommendations for Chromebooks / Android WebView
+Tabs themselves require **no App Inventor tab components**. Selecting a virtual tab simply sends `NAVIGATE` for that tab's saved URL, or `HOME` for a new/home tab.
 
-The blobby.vip UI has its own Performance Mode. For low-end classroom Chromebooks or older Android devices:
+---
 
-- enable **Settings → Performance → Performance Mode**
-- leave **Adaptive low-power rendering** enabled
-- avoid large uploaded wallpapers
-- keep the controller WebViewer around 74 px tall while browsing
-- avoid running several separate browsing WebViewers at once if your native tab implementation can suspend inactive tabs
+## Main WebViewStringChange event
 
-Performance Mode disables the decorative particle canvas, custom cursor rendering, backdrop blur, RGB animation, large shadows, and nonessential motion.
+Use:
 
-## GitHub Pages
+```text
+when WebViewer_UI.WebViewStringChange value
+```
 
-Keep `index.html` at the repository root, then enable:
+For commands containing `|`, use **Text → split at first** with `value` and `"|"`.
 
-Settings → Pages → Deploy from a branch → `main` → `/ (root)`.
+### 1. NAVIGATE
 
-## v7.1 compact browse bar
-When handling `NAVIGATE|...`, set `WebViewer_UI.Height` to **52** (instead of 100/74), then show `WebViewer_Browser` and navigate it.
-When handling `HOME`, hide `WebViewer_Browser` and set `WebViewer_UI.Height` to **-2** (Fill Parent).
-The web UI automatically detects an active browser URL and hides every homepage widget except the address/navigation bar. Home stays available on narrow phone screens.
+Condition:
+
+```text
+item 1 of (split at first value at "|") = "NAVIGATE"
+```
+
+Then:
+
+```text
+set WebViewer_UI.Height to 100     // small immediate fallback; UI_HEIGHT corrects it
+set WebViewer_Browser.Visible to true
+call WebViewer_Browser.GoToUrl
+    url = item 2 of (split at first value at "|")
+```
+
+After `UI_HEIGHT` is working reliably, the `Height = 100` line is optional because blobby.vip sends its exact height automatically.
+
+### 2. HOME
+
+Condition:
+
+```text
+get value = "HOME"
+```
+
+Then:
+
+```text
+set WebViewer_Browser.Visible to false
+set WebViewer_UI.Height to -2
+```
+
+`-2` means **Fill Parent** in App Inventor component sizing.
+
+### 3. BACK
+
+Condition:
+
+```text
+item 1 of (split at first value at "|") = "BACK"
+```
+
+Then:
+
+```text
+call WebViewer_Browser.GoToUrl
+    url = item 2 of (split at first value at "|")
+```
+
+Use the URL supplied by blobby.vip instead of native `GoBack`. Virtual tabs maintain separate lightweight histories, while a single native WebView history would mix pages from different virtual tabs.
+
+### 4. FORWARD
+
+Same as BACK, except compare item 1 with `"FORWARD"` and navigate to item 2.
+
+### 5. REFRESH
+
+Condition:
+
+```text
+get value = "REFRESH"
+```
+
+Then:
+
+```text
+call WebViewer_Browser.Reload
+```
+
+### 6. UI_HEIGHT — important
+
+Condition:
+
+```text
+item 1 of (split at first value at "|") = "UI_HEIGHT"
+```
+
+Then set:
+
+```text
+WebViewer_UI.Height = item 2
+```
+
+If App Inventor complains that item 2 is text, force it to a number with a Math block such as:
+
+```text
+0 + item 2
+```
+
+Typical heights are roughly:
+
+```text
+Bookmarks hidden:  ~72 px
+Bookmarks visible: ~100 px
+```
+
+The actual number may vary slightly with compact-tab settings.
+
+### 7. EXPAND_UI
+
+Condition: command (item 1 after split) = `EXPAND_UI`
+
+Then:
+
+```text
+set WebViewer_Browser.Visible to false
+set WebViewer_UI.Height to -2
+```
+
+This lets Settings and Layout Edit use the full screen.
+
+### 8. RESTORE_UI
+
+`RESTORE_UI|browser` means return to browsing:
+
+```text
+set WebViewer_Browser.Visible to true
+```
+
+blobby.vip will immediately send `UI_HEIGHT` again.
+
+`RESTORE_UI|home` means:
+
+```text
+set WebViewer_Browser.Visible to false
+set WebViewer_UI.Height to -2
+```
+
+### 9. OPEN_EXTERNAL (optional)
+
+If you want the ↗ button to open Android's normal browser, handle `OPEN_EXTERNAL|url` with the Activity Starter or your preferred external-browser method. It is optional.
+
+---
+
+## Keep the tab URL/history synchronized
+
+This step is strongly recommended. It lets blobby.vip learn about links clicked *inside* the actual website, not only URLs typed into blobby.vip.
+
+Use the browser WebViewer's page-loaded event:
+
+```text
+when WebViewer_Browser.PageLoaded url
+```
+
+Set:
+
+```text
+WebViewer_UI.WebViewString = join "URL|" url
+```
+
+The blobby.vip JavaScript polls the UI WebViewer's inbound WebViewString and updates the active virtual tab, address bar, history state, and bookmark star.
+
+If a future WebView extension exposes page titles or favicons, blobby.vip already understands optional inbound messages:
+
+```text
+TITLE|Actual page title
+FAVICON|https://example.com/favicon.ico
+```
+
+Without those, it gracefully uses the site's hostname / first letter.
+
+---
+
+## Browser UI handled entirely by blobby.vip
+
+No extra App Inventor Designer components are needed for:
+
+- Virtual tabs
+- New tab / close tab
+- Tab reorder
+- Tab session restore
+- Back / forward UI
+- Refresh button
+- Address bar
+- Home button
+- Bookmark star
+- Bookmarks bar
+- Bookmark folders
+- Bookmark add/edit/delete/reorder
+- Ctrl/Cmd + Shift + B
+- Browser overflow menu
+- Custom-theme styling
+- Responsive mobile layout
+
+This is deliberate: updating the GitHub Pages files can change the browser interface without rebuilding the AIA.
+
+---
+
+## Keyboard shortcuts inside blobby.vip
+
+```text
+Ctrl/Cmd + L             Focus address bar
+Ctrl/Cmd + T             New tab
+Ctrl/Cmd + W             Close current tab
+Ctrl/Cmd + Tab           Next tab
+Ctrl/Cmd + Shift + Tab   Previous tab
+Ctrl/Cmd + R             Refresh
+Alt + Left               Back
+Alt + Right              Forward
+Ctrl/Cmd + Shift + B     Toggle bookmarks bar
+Ctrl/Cmd + K             Command palette
+Ctrl/Cmd + ,             Settings
+```
+
+On Android touch devices, the visible buttons/menu provide the same actions.

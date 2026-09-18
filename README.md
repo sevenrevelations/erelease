@@ -1,157 +1,58 @@
-# blobby.vip
+# blobby.vip v8
 
-A sleek, highly customizable browser-controller homepage designed for GitHub Pages + MIT App Inventor.
+A performance-first customizable browser controller designed for a two-WebViewer MIT App Inventor app.
 
-## v7 redesign
+## v8 highlights
 
-This build keeps the existing customization system but rebuilds the interface and editor around performance and a much cleaner visual hierarchy.
+- Full-screen blobby.vip home/new-tab experience
+- Compact, theme-aware browser chrome after navigation
+- Lightweight **virtual tabs** using one real Android WebViewer
+- New tab, close, switch, reorder, session restore, per-tab URL history
+- Back, forward, refresh, Home, address/search bar, bookmark star, overflow menu
+- Optional bookmarks bar with `Ctrl/Cmd + Shift + B`
+- Bookmark add/edit/delete/reorder and lightweight folders
+- Bookmarks/tabs/settings persist with localStorage and settings export/import
+- `UI_HEIGHT|N` App Inventor bridge message automatically minimizes vertical space
+- Tabs/navigation/bookmarks inherit built-in and custom theme color variables instantly
+- Performance Mode strips expensive browser-chrome effects
+- Responsive Chromebook, desktop, and phone behavior
+- No iframe browsing and no heavy frontend framework
 
-### New / improved
-
-- Full-screen **20 × 14 layout grid** that reaches the edges and corners of the usable page
-- Drag **and resize** every major homepage block
-- Collision detection prevents elements from overlapping
-- Layout Undo / Redo and one-click Center for the selected block
-- 10 layout presets plus saved custom layouts
-- Completely redesigned Settings panel with clearer categories and search
-- Hidden scrollbars while preserving mouse-wheel, trackpad, keyboard, and touch scrolling
-- Custom desktop cursor system with dot, ring, RGB, trail, sparkle, comet, glow, pixel, crosshair, and blob modes
-- Focus Mode, UI-density options, customizable navigation buttons, and clock controls
-- Command palette with Ctrl/Cmd + K
-- 24 theme presets plus full custom color editing
-- Expanded ambient effects including constellation, digital grid, neon horizon, liquid gradient, light rays, soft clouds, and space dust
-- Existing App Inventor bridge remains iframe-free
-- Existing v6/v5 preferences are migrated into v7 when possible
-
-## Performance design
-
-v7 is deliberately optimized for lower-end Chromebooks and Android WebViews.
-
-**Performance Mode** is the strict option. It disables or simplifies:
-
-- Canvas particle effects
-- Custom cursor effects and cursor trails
-- Backdrop blur
-- Large shadows
-- RGB animation
-- Nonessential transitions and motion
-- Expensive background filtering
-
-**Adaptive low-power rendering** is enabled by default. On devices that report roughly 4 CPU threads or 4 GB of memory or less, blobby.vip automatically:
-
-- Caps ambient rendering near 30 FPS
-- Uses a lower canvas device-pixel ratio
-- Caps particle density even if the slider is higher
-- Reduces expensive ambient blur
-- Keeps hidden effects from consuming animation work
-
-Performance Mode is still stronger than adaptive rendering and can be enabled manually in Settings → Performance.
-
-## Layout blocks
-
-The movable/resizable grid includes:
-
-- Utility/settings controls
-- Search/navigation bar
-- blobby.vip title
-- Clock
-- Shortcuts
-- Recent pages
-- Desktop preview
-
-Open the ▦ button or **Settings → Layout → Open layout editor**. Use:
-
-- **✥** to move a block
-- **⌟** to resize a block
-- Arrow keys while a move/resize handle is focused for cell-by-cell adjustments
-- Undo / Redo from the floating toolbar
-- Center to snap the selected block to the middle when the space is available
-
-The editor spans the full usable viewport. Invalid or occupied destinations are rejected instead of allowing overlap.
-
-## Customization
-
-The project includes:
-
-- 24 preset themes
-- Full custom theme color editor
-- Theme import/export
-- Solid, gradient, remote-image, or uploaded-image backgrounds
-- Panel opacity, blur, radius, shadows, and UI density
-- RGB logo/search/buttons/panels/ambient targeting
-- Rain + optional lightning + rainy-glass ambience
-- Snow, stars, particles, fireflies, orbs, aurora, fog, Matrix rain, bubbles, shooting stars, waves, dust, constellation, clouds, digital grid, neon horizon, liquid gradient, light rays, and space dust
-- Custom cursor presets and controls
-- Focus Mode
-- Shortcut folders and reordering
-- Saved layouts
-- Complete customization profiles
-- Settings and theme import/export
-- Reduced Motion and keyboard controls
-
-## Keyboard shortcuts
-
-When keyboard shortcuts are enabled:
-
-- `Ctrl/Cmd + L` — focus the address bar
-- `Ctrl/Cmd + K` — command palette
-- `Ctrl/Cmd + /` — command palette
-- `Ctrl/Cmd + ,` — Settings
-- `Ctrl/Cmd + Shift + E` — Layout Edit
-- `/` — focus the address bar when not typing
-- `Esc` — close an open dialog
-
-## App Inventor architecture
-
-GitHub Pages hosts only the blobby.vip controller UI. External websites are loaded by MIT App Inventor's browser WebViewer, not by an iframe.
-
-Typical messages:
+## Architecture
 
 ```text
-NAVIGATE|https://example.com/
-BACK|https://previous.example/
-FORWARD|https://next.example/
-REFRESH
-HOME
-EXPAND_UI|settings
-EXPAND_UI|layout
-RESTORE_UI|browser
-RESTORE_UI|home
+WebViewer_UI
+└── GitHub-hosted blobby.vip
+    ├── Home UI
+    ├── Virtual tabs
+    ├── Navigation chrome
+    ├── Bookmarks
+    └── Settings/themes/effects
+
+WebViewer_Browser
+└── The one real external website WebView
 ```
 
-Tabs are intentionally not managed by this GitHub UI. Your MIT App Inventor tab layer can own the active browsing WebViewer and send its URL back to blobby.vip with `URL|https://...`.
+Virtual tabs save each tab's URL/history/title metadata and reuse `WebViewer_Browser` when switching. This avoids creating multiple Android WebViews, which is substantially friendlier to low-end Chromebooks and Android devices.
 
-See `APP_INVENTOR_SETUP.md` for the integration logic.
+## Browser chrome heights
+
+The web UI calculates its own required height and sends `UI_HEIGHT|N` to App Inventor. With compact tabs, the target is roughly 72px without bookmarks and 100px with the bookmarks bar, rather than permanently reserving a large toolbar.
+
+## Performance
+
+- Vanilla JavaScript/CSS; no React/Vue/runtime framework
+- One real browser WebView regardless of virtual tab count
+- Debounced localStorage writes
+- Keyed tab DOM updates instead of rebuilding the tab strip unnecessarily
+- Event delegation for tab/bookmark actions
+- Ambient/background rendering disabled in App Inventor browser mode
+- Custom cursor disabled in compact browser mode
+- Existing adaptive low-power canvas caps retained
+- Performance Mode removes blur, large shadows, RGB animation, and nonessential transitions
 
 ## Files
 
-```text
-index.html
-style.css
-core.js
-themes.js
-browser-bridge.js
-effects.js
-cursor.js
-layout.js
-app.js
-APP_INVENTOR_SETUP.md
-README.md
-tests/check.cjs
-```
+`index.html` remains at the repository root for direct GitHub Pages deployment.
 
-## Local preview
-
-You can double-click `index.html`, but a local server is more reliable:
-
-```bash
-python -m http.server 8000
-```
-
-Then open `http://localhost:8000`.
-
-## GitHub Pages
-
-Upload the files directly to the repository root so `index.html` is visible immediately. Then use:
-
-Settings → Pages → Deploy from a branch → `main` → `/ (root)`.
+See `APP_INVENTOR_SETUP.md` for the exact bridge blocks, including `UI_HEIGHT`, URL synchronization, Home, Back, Forward, and Refresh.

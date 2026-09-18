@@ -28,6 +28,11 @@
   <div id="appShell" class="app-shell">
     <div id="layoutGridGuide" class="layout-grid-guide" hidden aria-hidden="true"></div>
 
+    <section id="browserTabs" class="browser-tabs browser-only" aria-label="Browser tabs" hidden>
+      <div id="tabList" class="tab-list hide-scrollbar" role="tablist" aria-label="Open tabs"></div>
+      <button id="newTabButton" class="new-tab-button" type="button" aria-label="New tab" title="New tab (Ctrl/Cmd+T)">+</button>
+    </section>
+
     <header id="topbar" class="shell-block utility-card" data-layout-item="topbar">
       <button class="drag-handle" type="button" aria-label="Move utility controls" title="Move">✥</button><button class="resize-handle" type="button" aria-label="Resize utility controls" title="Resize">⌟</button>
       <div class="utility-status"><span class="status-dot"></span><span id="bridgeBadge">Demo</span><span id="performanceBadge" class="mode-chip" hidden>Performance</span></div>
@@ -44,9 +49,30 @@
           <button id="homeButton" class="nav-button" type="button" aria-label="Home" title="Home">⌂</button>
         </div>
         <div class="omnibox-wrap"><span class="omnibox-icon" aria-hidden="true">⌕</span><input id="addressBar" class="omnibox" aria-label="Search or enter address" placeholder="Search or enter a URL" autocomplete="off" spellcheck="false"><button id="clearAddressButton" class="omnibox-clear" type="button" aria-label="Clear address" title="Clear">×</button></div>
+        <button id="bookmarkPageButton" class="nav-button browser-only-control" type="button" aria-label="Bookmark this page" title="Bookmark this page">☆</button>
         <button class="go-button" type="submit" aria-label="Go">Go</button>
         <button id="externalButton" class="nav-button external-button" type="button" aria-label="Open externally" title="Open externally">↗</button>
+        <button id="browserMenuButton" class="nav-button browser-only-control" type="button" aria-label="Browser menu" title="Browser menu">⋮</button>
       </form>
+      <div id="browserMenu" class="browser-menu" hidden>
+        <button id="menuNewTab" type="button">New tab <span>Ctrl+T</span></button>
+        <button id="menuBookmarkPage" type="button">Bookmark page <span>☆</span></button>
+        <button id="menuToggleBookmarks" type="button">Toggle bookmarks <span>Ctrl+Shift+B</span></button>
+        <button id="menuBack" type="button">Back <span>Alt+←</span></button>
+        <button id="menuForward" type="button">Forward <span>Alt+→</span></button>
+        <button id="menuRefresh" type="button">Refresh <span>Ctrl+R</span></button>
+        <button id="menuHome" type="button">Home</button>
+        <hr>
+        <button id="menuCloseTab" type="button">Close tab <span>Ctrl+W</span></button>
+        <button id="menuCloseOtherTabs" type="button">Close other tabs</button>
+        <button id="menuBrowserSettings" type="button">Browser settings</button>
+      </div>
+    </section>
+
+    <section id="bookmarksBar" class="bookmarks-bar browser-only" aria-label="Bookmarks bar" hidden>
+      <div id="bookmarkList" class="bookmark-list hide-scrollbar"></div>
+      <button id="addBookmarkButton" class="bookmark-add" type="button" aria-label="Add bookmark" title="Add bookmark">+</button>
+      <div id="bookmarkFolderMenu" class="bookmark-folder-menu" hidden></div>
     </section>
 
     <section id="heroBlock" class="shell-block home-widget hero-card" data-layout-item="hero">
@@ -92,6 +118,8 @@
   <dialog id="commandDialog" class="command-dialog" aria-labelledby="commandTitle"><div class="command-shell"><div class="command-search"><span>⌘</span><input id="commandSearch" autocomplete="off" placeholder="Type a command…" aria-label="Command search"></div><div id="commandList" class="command-list hide-scrollbar"></div><small>Enter to run · Esc to close</small></div></dialog>
 
   <dialog id="shortcutDialog" class="small-dialog" aria-labelledby="shortcutTitle"><form id="shortcutForm" class="dialog-content"><header class="dialog-title"><div><span class="eyebrow">Quick access</span><h2 id="shortcutTitle">Shortcut</h2></div><button class="icon-button" type="button" data-close="shortcutDialog" aria-label="Close">×</button></header><label>Name<input id="shortcutName" maxlength="32" required placeholder="YouTube"></label><label>Website<input id="shortcutUrl" required placeholder="youtube.com"></label><label>Folder<input id="shortcutFolder" maxlength="24" placeholder="Optional, e.g. Study"></label><label>Icon<input id="shortcutIcon" maxlength="4" placeholder="YT"></label><input id="shortcutIndex" type="hidden" value="-1"><p id="shortcutError" class="error" role="alert"></p><div class="dialog-actions"><button id="deleteShortcutButton" class="danger-button" type="button" hidden>Delete</button><span></span><button type="button" data-close="shortcutDialog">Cancel</button><button class="go-button" type="submit">Save</button></div></form></dialog>
+
+  <dialog id="bookmarkDialog" class="small-dialog" aria-labelledby="bookmarkTitle"><form id="bookmarkForm" class="dialog-content"><header class="dialog-title"><div><span class="eyebrow">Bookmarks</span><h2 id="bookmarkTitle">Bookmark</h2></div><button class="icon-button" type="button" data-close="bookmarkDialog" aria-label="Close">×</button></header><label>Name<input id="bookmarkName" maxlength="48" required placeholder="Example"></label><label>Website<input id="bookmarkUrl" required placeholder="https://example.com"></label><label>Folder<input id="bookmarkFolder" maxlength="32" placeholder="Optional folder"></label><label>Icon<input id="bookmarkIcon" maxlength="4" placeholder="E"></label><p id="bookmarkError" class="error" role="alert"></p><div class="dialog-actions"><button id="deleteBookmarkButton" class="danger-button" type="button" hidden>Delete</button><span></span><button type="button" data-close="bookmarkDialog">Cancel</button><button class="go-button" type="submit">Save</button></div></form></dialog>
 
   <dialog id="promptDialog" class="small-dialog" aria-labelledby="promptTitle"><form id="promptForm" class="dialog-content"><header class="dialog-title"><div><span class="eyebrow" id="promptEyebrow">blobby.vip</span><h2 id="promptTitle">Name</h2></div></header><p id="promptDetail" class="muted"></p><label id="promptLabel">Name<input id="promptInput" maxlength="48"></label><div class="dialog-actions"><span></span><button id="promptCancel" type="button">Cancel</button><button id="promptAccept" class="go-button" type="submit">Save</button></div></form></dialog>
 

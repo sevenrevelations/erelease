@@ -66,39 +66,88 @@ html[data-hover=true] button:hover:not(:disabled){transform:translateY(-1px)}htm
 @media(max-width:460px){.nav-cluster #forwardButton,.nav-cluster #homeButton{display:none}.utility-status{font-size:.64rem}#bridgeBadge{display:none}.mode-chip{display:none}.topbar-actions{gap:2px}.icon-button{width:31px;height:31px}.settings-header{display:grid}.settings-header-actions{width:100%;justify-content:stretch}.settings-search-wrap{flex:1}.settings-search-wrap input{width:100%}.dialog-actions{grid-template-columns:1fr 1fr}.dialog-actions span{display:none}.toast-region{left:10px;right:10px;bottom:10px}.toast{max-width:none}.shortcut-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
 
-/* App Inventor browser mode: only the controller bar remains visible. */
-html[data-app-mode=true][data-browser-active=true] .app-shell:not([data-layout-editing=true]){display:block;width:100%;margin:0;padding:6px;min-height:0;height:70px}
-html[data-app-mode=true][data-browser-active=true] .app-shell:not([data-layout-editing=true]) [data-layout-item]:not(#addressbarBlock){display:none!important}
-html[data-app-mode=true][data-browser-active=true] #addressbarBlock{height:58px;display:block!important;border-radius:14px}
 
 .sr-status{position:fixed;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}.noscript{position:fixed;inset:auto 12px 12px;z-index:300;background:#111827;color:white;padding:10px;border-radius:10px}
 
 html[data-effect-depth=deep] .ambient-layer{opacity:.58}html[data-effect-depth=vivid] .ambient-layer{opacity:1}html[data-low-power=true] .ambient-layer{filter:brightness(var(--effect-brightness,1))}html[data-performance=true] .ambient-layer{filter:none!important}html[data-rgb=true][data-rgb-cursor=true] .custom-cursor:not([data-style=rgb]) .cursor-ring{animation:rgbButton var(--rgb-speed) linear infinite}
 html[data-rgb=true][data-rgb-mode=pulse] .hero-card h1,html[data-rgb=true][data-rgb-mode=pulse] .go-button{animation-direction:alternate;animation-timing-function:ease-in-out}html[data-rgb=true][data-rgb-mode=wave] .hero-card h1{animation-duration:calc(var(--rgb-speed)*.72)}
 
-/* v7.1 App Inventor ultra-compact browse bar.
-   Home remains the full customizable page; after NAVIGATE only the address/navigation bar is rendered. */
+
+/* v8 compact browser chrome: virtual tabs + navigation + optional bookmarks. */
+.browser-tabs,.bookmarks-bar{display:none}
+.browser-only-control{display:none!important}
+.browser-tabs{align-items:center;gap:4px;background:color-mix(in srgb,var(--bg) 88%,var(--panel));border-bottom:1px solid color-mix(in srgb,var(--line) 72%,transparent);padding:2px 4px 0;min-width:0}
+.tab-list{display:flex;align-items:end;gap:3px;min-width:0;flex:1;overflow-x:auto;overscroll-behavior-x:contain;scroll-snap-type:x proximity}
+.browser-tab{position:relative;display:flex;align-items:center;gap:6px;flex:0 1 190px;min-width:112px;max-width:210px;height:28px;padding:0 7px 0 9px;border:1px solid transparent;border-bottom:0;border-radius:10px 10px 0 0;background:color-mix(in srgb,var(--panel) 64%,transparent);color:var(--muted);scroll-snap-align:start;overflow:hidden}
+.browser-tab[aria-selected=true]{background:color-mix(in srgb,var(--panel2) 94%,var(--accent) 6%);color:var(--ink);border-color:color-mix(in srgb,var(--line) 88%,transparent);box-shadow:inset 0 2px 0 color-mix(in srgb,var(--accent) 70%,transparent)}
+.browser-tab:hover{background:color-mix(in srgb,var(--panel2) 82%,transparent)}
+.tab-favicon,.bookmark-favicon{width:17px;height:17px;flex:0 0 17px;border-radius:5px;display:grid;place-items:center;overflow:hidden;background:color-mix(in srgb,var(--accent) 15%,var(--panel2));color:var(--accent);font-size:10px;font-weight:800}
+.tab-favicon img,.bookmark-favicon img{width:100%;height:100%;object-fit:cover}
+.tab-title{min-width:0;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11.5px;font-weight:620;text-align:left}
+.tab-close{width:19px;height:19px;min-height:19px;flex:0 0 19px;border:0;border-radius:6px;background:transparent;color:inherit;display:grid;place-items:center;font-size:14px;line-height:1}
+.tab-close:hover{background:color-mix(in srgb,var(--line) 55%,transparent);color:var(--ink)}
+.new-tab-button{width:28px;height:28px;min-height:28px;border:0;border-radius:8px;background:transparent;color:var(--muted);font-size:18px;display:grid;place-items:center;flex:0 0 28px}
+.new-tab-button:hover{background:color-mix(in srgb,var(--panel2) 80%,transparent);color:var(--ink)}
+html[data-compact-tabs=false] .browser-tab{height:32px;min-width:128px;max-width:230px}.browser-tab.dragging{opacity:.45}.browser-tab.drop-target{box-shadow:inset 2px 0 0 var(--accent)}
+
+.bookmarks-bar{align-items:center;gap:3px;min-width:0;padding:2px 4px;background:color-mix(in srgb,var(--panel) 88%,var(--bg));border-top:1px solid color-mix(in srgb,var(--line) 55%,transparent);border-bottom:1px solid color-mix(in srgb,var(--line) 72%,transparent)}
+.bookmark-list{display:flex;align-items:center;gap:2px;min-width:0;flex:1;overflow-x:auto;overscroll-behavior-x:contain}
+.bookmark-item,.bookmark-folder,.bookmark-add{height:24px;min-height:24px;border:0;border-radius:7px;background:transparent;color:var(--ink);display:flex;align-items:center;gap:5px;padding:0 7px;white-space:nowrap;font-size:10.5px}
+.bookmark-item:hover,.bookmark-folder:hover,.bookmark-add:hover{background:color-mix(in srgb,var(--panel2) 80%,transparent)}
+.bookmark-label{max-width:120px;overflow:hidden;text-overflow:ellipsis}.bookmark-add{width:25px;padding:0;justify-content:center;font-size:16px;flex:0 0 25px;color:var(--muted)}
+.bookmark-folder::before{content:'▸';font-size:9px;color:var(--muted)}
+.bookmark-folder-menu,.browser-menu{position:fixed;z-index:190;min-width:190px;max-width:min(320px,calc(100vw - 16px));padding:5px;border:1px solid var(--line);border-radius:11px;background:color-mix(in srgb,var(--panel) 97%,var(--bg));box-shadow:0 16px 42px #0007}
+.bookmark-folder-menu button,.browser-menu button{width:100%;min-height:30px;border:0;border-radius:7px;background:transparent;color:var(--ink);display:flex;align-items:center;justify-content:space-between;gap:12px;padding:5px 8px;text-align:left;font-size:11px}
+.bookmark-folder-menu button:hover,.browser-menu button:hover{background:color-mix(in srgb,var(--panel2) 82%,transparent)}
+.browser-menu button span{color:var(--muted);font-size:9.5px}.browser-menu hr{border:0;border-top:1px solid var(--line);margin:4px}
+
 html[data-app-mode=true][data-browser-active=true] body{min-height:0;overflow:hidden}
 html[data-app-mode=true][data-browser-active=true] .background-layer,
 html[data-app-mode=true][data-browser-active=true] .ambient-layer{display:none!important}
-html[data-app-mode=true][data-browser-active=true] .app-shell:not([data-layout-editing=true]){
-  display:block;width:100%;margin:0;padding:3px;min-height:0;height:52px;overflow:hidden
-}
-html[data-app-mode=true][data-browser-active=true] #addressbarBlock{
-  height:46px;display:block!important;border-radius:12px;padding:3px
-}
-html[data-app-mode=true][data-browser-active=true] .address-form{gap:3px}
+html[data-app-mode=true][data-browser-active=true] .app-shell:not([data-layout-editing=true]){display:flex!important;flex-direction:column;width:100%;height:auto!important;min-height:0!important;margin:0;padding:0!important;gap:0;overflow:visible;isolation:isolate}
+html[data-app-mode=true][data-browser-active=true] .app-shell:not([data-layout-editing=true]) [data-layout-item]:not(#addressbarBlock){display:none!important}
+html[data-app-mode=true][data-browser-active=true] #browserTabs{display:flex!important;height:30px;flex:0 0 30px}
+html[data-app-mode=true][data-browser-active=true][data-compact-tabs=false] #browserTabs{height:34px;flex-basis:34px}
+html[data-app-mode=true][data-browser-active=true] #addressbarBlock{position:relative!important;inset:auto!important;grid-area:auto!important;display:block!important;width:100%!important;height:42px!important;min-height:42px!important;flex:0 0 42px;border:0;border-radius:0!important;border-bottom:1px solid color-mix(in srgb,var(--line) 76%,transparent);background:color-mix(in srgb,var(--panel) 94%,var(--bg));box-shadow:none;padding:3px 4px!important;overflow:visible}
+html[data-app-mode=true][data-browser-active=true] #addressbarBlock>.drag-handle,
+html[data-app-mode=true][data-browser-active=true] #addressbarBlock>.resize-handle{display:none!important}
+html[data-app-mode=true][data-browser-active=true] .address-form{display:grid;grid-template-columns:auto minmax(80px,1fr) auto auto auto;gap:3px;height:36px}
+html[data-app-mode=true][data-browser-active=true] .browser-only-control{display:grid!important}
 html[data-app-mode=true][data-browser-active=true] .nav-cluster{gap:1px}
-html[data-app-mode=true][data-browser-active=true] .nav-button{
-  width:30px;height:32px;min-height:32px;border-radius:9px
+html[data-app-mode=true][data-browser-active=true] .nav-button{width:30px;height:34px;min-height:34px;border-radius:8px}
+html[data-app-mode=true][data-browser-active=true] .omnibox-wrap,html[data-app-mode=true][data-browser-active=true] .omnibox{min-height:34px;height:34px}
+html[data-app-mode=true][data-browser-active=true] .omnibox{border-radius:9px;padding-left:31px;padding-right:29px;font-size:12px}
+html[data-app-mode=true][data-browser-active=true] .omnibox-icon{left:10px}.omnibox-clear{right:4px}
+html[data-app-mode=true][data-browser-active=true] .address-form>.go-button{display:none!important}
+html[data-app-mode=true][data-browser-active=true] #bookmarksBar:not([hidden]){display:flex!important;height:28px;flex:0 0 28px}
+html[data-app-mode=true][data-browser-active=true] #bookmarksBar[hidden]{display:none!important}
+html[data-app-mode=true][data-browser-active=true] .custom-cursor{display:none!important}
+html[data-performance=true] .browser-tabs,html[data-performance=true] .bookmarks-bar,html[data-performance=true] #addressbarBlock{backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
+html[data-performance=true] .browser-tab,html[data-performance=true] .bookmark-item{transition:none!important}
+html[data-rgb=true][data-rgb-panels=true][data-app-mode=true][data-browser-active=true] #browserTabs,
+html[data-rgb=true][data-rgb-panels=true][data-app-mode=true][data-browser-active=true] #bookmarksBar{border-color:color-mix(in srgb,var(--accent) 52%,var(--line))}
+html[data-rgb=true][data-rgb-buttons=true][data-app-mode=true][data-browser-active=true] .browser-tab[aria-selected=true]{box-shadow:inset 0 2px 0 var(--accent)}
+
+/* When a multi-tab session is on the full blobby.vip home page, keep a thin tab switcher reachable. */
+html[data-app-mode=true][data-browser-active=false][data-tabs-visible=true] #browserTabs{display:flex!important;position:fixed;z-index:90;top:4px;left:4px;right:4px;height:30px;border:1px solid color-mix(in srgb,var(--line) 72%,transparent);border-radius:10px;padding-top:1px;background:color-mix(in srgb,var(--panel) 92%,transparent);backdrop-filter:blur(10px)}
+html[data-app-mode=true][data-browser-active=false][data-tabs-visible=true][data-performance=true] #browserTabs{backdrop-filter:none}
+
+@media(max-width:700px){
+ html[data-app-mode=true][data-browser-active=true] .address-form{grid-template-columns:auto minmax(64px,1fr) auto auto}
+ html[data-app-mode=true][data-browser-active=true] #externalButton{display:none!important}
+ .browser-tab{min-width:104px;max-width:170px;flex-basis:145px}.bookmark-label{max-width:92px}
 }
-html[data-app-mode=true][data-browser-active=true] .omnibox-wrap,
-html[data-app-mode=true][data-browser-active=true] .omnibox{min-height:32px}
-html[data-app-mode=true][data-browser-active=true] .omnibox{border-radius:10px;padding-left:31px;padding-right:30px}
-html[data-app-mode=true][data-browser-active=true] .omnibox-icon{left:10px}
-html[data-app-mode=true][data-browser-active=true] .go-button{min-height:32px;padding:0 10px;border-radius:9px}
-/* Keep Home reachable in the compact App Inventor bar even on narrow phones. */
 @media(max-width:460px){
-  html[data-app-mode=true][data-browser-active=true] .nav-cluster #homeButton{display:grid}
-  html[data-app-mode=true][data-browser-active=true] .nav-cluster #forwardButton{display:none}
+ html[data-app-mode=true][data-browser-active=true] .nav-cluster #forwardButton{display:none!important}
+ html[data-app-mode=true][data-browser-active=true] .nav-cluster #homeButton:not([hidden]){display:grid!important}
+ html[data-app-mode=true][data-browser-active=true] .address-form{grid-template-columns:auto minmax(52px,1fr) auto auto}
+ html[data-app-mode=true][data-browser-active=true] #bookmarkPageButton{display:none!important}
+ .browser-tab{min-width:96px;max-width:150px;flex-basis:126px}.tab-title{font-size:10.5px}
 }
+/* Theme integration for browser chrome: custom opacity, blur and corner radius flow through existing variables. */
+.browser-tabs,.bookmarks-bar,html[data-app-mode=true][data-browser-active=true] #addressbarBlock{background:color-mix(in srgb,var(--panel) calc(var(--panel-opacity)*100%),var(--bg))}
+.browser-tab{border-radius:clamp(7px,calc(var(--radius)*.55),12px) clamp(7px,calc(var(--radius)*.55),12px) 0 0}
+.tab-close,.new-tab-button,.bookmark-item,.bookmark-folder,.bookmark-add{border-radius:clamp(5px,calc(var(--radius)*.38),9px)}
+html[data-glass=true]:not([data-performance=true]) .browser-tabs,
+html[data-glass=true]:not([data-performance=true]) .bookmarks-bar,
+html[data-glass=true]:not([data-performance=true])[data-app-mode=true][data-browser-active=true] #addressbarBlock{backdrop-filter:blur(min(var(--blur),14px));-webkit-backdrop-filter:blur(min(var(--blur),14px))}
