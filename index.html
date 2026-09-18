@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#080a12">
+  <meta name="description" content="blobby.vip — a fast, customizable browser controller for MIT App Inventor.">
+  <title>blobby.vip</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='18' fill='%238da2ff'/%3E%3Ctext x='17' y='47' font-size='48' font-family='Arial' font-weight='700' fill='%23080a12'%3Eb%3C/text%3E%3C/svg%3E">
+  <link rel="stylesheet" href="./style.css">
+  <script src="./core.js"></script>
+  <script src="./themes.js"></script>
+  <script src="./browser-bridge.js"></script>
+  <script src="./effects.js"></script>
+  <script src="./cursor.js"></script>
+  <script src="./layout.js"></script>
+  <script src="./app.js" defer></script>
+</head>
+<body>
+  <div id="backgroundLayer" class="background-layer" aria-hidden="true"></div>
+  <div id="ambientLayer" class="ambient-layer" aria-hidden="true">
+    <div class="aurora-layer"></div><div class="fog-layer"></div><div class="wave-layer"></div><div class="cloud-layer"></div><div class="digital-grid-layer"></div><div class="neon-horizon-layer"></div><div class="liquid-layer"></div><div class="light-rays-layer"></div>
+    <canvas id="effectsCanvas"></canvas>
+  </div>
+
+  <div id="customCursor" class="custom-cursor" hidden aria-hidden="true"><canvas></canvas><i class="cursor-ring"></i><i class="cursor-dot"></i></div>
+
+  <div id="appShell" class="app-shell">
+    <div id="layoutGridGuide" class="layout-grid-guide" hidden aria-hidden="true"></div>
+
+    <header id="topbar" class="shell-block utility-card" data-layout-item="topbar">
+      <button class="drag-handle" type="button" aria-label="Move utility controls" title="Move">✥</button><button class="resize-handle" type="button" aria-label="Resize utility controls" title="Resize">⌟</button>
+      <div class="utility-status"><span class="status-dot"></span><span id="bridgeBadge">Demo</span><span id="performanceBadge" class="mode-chip" hidden>Performance</span></div>
+      <div class="topbar-actions"><button id="commandButton" class="icon-button" type="button" title="Command palette" aria-label="Command palette">⌘</button><button id="layoutEditButton" class="icon-button" type="button" title="Edit layout" aria-label="Edit layout">▦</button><button id="settingsButton" class="icon-button" type="button" title="Settings" aria-label="Open settings">⚙</button></div>
+    </header>
+
+    <section id="addressbarBlock" class="shell-block address-block" data-layout-item="addressbar">
+      <button class="drag-handle" type="button" aria-label="Move search bar" title="Move">✥</button><button class="resize-handle" type="button" aria-label="Resize search bar" title="Resize">⌟</button>
+      <form id="addressForm" class="address-form" role="search">
+        <div class="nav-cluster" aria-label="Navigation">
+          <button id="backButton" class="nav-button" type="button" aria-label="Back" title="Back">←</button>
+          <button id="forwardButton" class="nav-button" type="button" aria-label="Forward" title="Forward">→</button>
+          <button id="refreshButton" class="nav-button" type="button" aria-label="Refresh" title="Refresh">↻</button>
+          <button id="homeButton" class="nav-button" type="button" aria-label="Home" title="Home">⌂</button>
+        </div>
+        <div class="omnibox-wrap"><span class="omnibox-icon" aria-hidden="true">⌕</span><input id="addressBar" class="omnibox" aria-label="Search or enter address" placeholder="Search or enter a URL" autocomplete="off" spellcheck="false"><button id="clearAddressButton" class="omnibox-clear" type="button" aria-label="Clear address" title="Clear">×</button></div>
+        <button class="go-button" type="submit" aria-label="Go">Go</button>
+        <button id="externalButton" class="nav-button external-button" type="button" aria-label="Open externally" title="Open externally">↗</button>
+      </form>
+    </section>
+
+    <section id="heroBlock" class="shell-block home-widget hero-card" data-layout-item="hero">
+      <button class="drag-handle" type="button" aria-label="Move title" title="Move">✥</button><button class="resize-handle" type="button" aria-label="Resize title" title="Resize">⌟</button>
+      <div class="hero-copy"><h1>blobby<span>.vip</span></h1><p id="subtitleText">made by panga</p></div>
+    </section>
+
+    <section id="clockBlock" class="shell-block home-widget clock-card" data-layout-item="clock">
+      <button class="drag-handle" type="button" aria-label="Move clock" title="Move">✥</button><button class="resize-handle" type="button" aria-label="Resize clock" title="Resize">⌟</button>
+      <strong id="clockTime">--:--</strong><span id="clockDate">Loading date…</span>
+    </section>
+
+    <section id="shortcutsBlock" class="shell-block home-widget panel-card" data-layout-item="shortcuts">
+      <button class="drag-handle" type="button" aria-label="Move shortcuts" title="Move">✥</button><button class="resize-handle" type="button" aria-label="Resize shortcuts" title="Resize">⌟</button>
+      <div class="section-head"><div><span class="eyebrow">Favorites</span><h2>Quick access</h2></div><button id="manageShortcutsButton" class="text-button" type="button">Edit</button></div><div id="shortcutGrid" class="shortcut-grid hide-scrollbar"></div>
+    </section>
+
+    <section id="recentBlock" class="shell-block home-widget panel-card" data-layout-item="recent">
+      <button class="drag-handle" type="button" aria-label="Move recent sites" title="Move">✥</button><button class="resize-handle" type="button" aria-label="Resize recent sites" title="Resize">⌟</button>
+      <div class="section-head"><div><span class="eyebrow">History</span><h2>Recent</h2></div><button id="clearRecentButton" class="text-button" type="button">Clear</button></div><div id="recentList" class="recent-list hide-scrollbar"></div>
+    </section>
+
+    <section id="previewBlock" class="shell-block home-widget preview-card" data-layout-item="preview" hidden>
+      <button class="drag-handle" type="button" aria-label="Move preview" title="Move">✥</button><button class="resize-handle" type="button" aria-label="Resize preview" title="Resize">⌟</button>
+      <div class="preview-icon">↗</div><div><span class="eyebrow">Desktop preview</span><h2 id="previewTitle">Ready to browse</h2><p id="previewUrl">MIT App Inventor opens the actual page in its browser WebViewer.</p></div><button id="previewExternal" class="go-button" type="button">Open</button>
+    </section>
+
+    <aside id="layoutToolbar" class="layout-toolbar" hidden aria-label="Layout editor">
+      <div class="layout-toolbar-copy"><strong id="selectedLayoutName">Layout editor</strong><span id="selectedLayoutMeta">Select an element, then drag or resize it anywhere on the grid.</span></div>
+      <div class="layout-toolbar-actions"><button id="undoLayoutButton" type="button">Undo</button><button id="redoLayoutButton" type="button">Redo</button><button id="centerLayoutButton" type="button">Center</button><button id="saveLayoutOrderButton" class="primary-button" type="button">Save</button><button id="cancelLayoutEditButton" type="button">Cancel</button></div>
+    </aside>
+    <p id="status" class="sr-status" role="status" aria-live="polite"></p>
+  </div>
+
+  <dialog id="settingsDialog" class="settings-dialog" aria-labelledby="settingsTitle">
+    <div class="settings-shell">
+      <header class="settings-header"><div><span class="eyebrow">blobby.vip preferences</span><h2 id="settingsTitle">Settings</h2></div><div class="settings-header-actions"><div class="settings-search-wrap"><span>⌕</span><input id="settingsSearch" type="search" placeholder="Search settings" aria-label="Search settings"></div><button class="icon-button" data-close="settingsDialog" aria-label="Close settings">×</button></div></header>
+      <div class="settings-body"><nav id="settingsNav" class="settings-nav hide-scrollbar" aria-label="Settings categories"></nav><main id="settingsPanels" class="settings-panels hide-scrollbar"></main></div>
+      <footer class="settings-footer"><span id="saveStatus">Saved automatically</span><button data-close="settingsDialog" class="go-button" type="button">Done</button></footer>
+    </div>
+  </dialog>
+
+  <dialog id="commandDialog" class="command-dialog" aria-labelledby="commandTitle"><div class="command-shell"><div class="command-search"><span>⌘</span><input id="commandSearch" autocomplete="off" placeholder="Type a command…" aria-label="Command search"></div><div id="commandList" class="command-list hide-scrollbar"></div><small>Enter to run · Esc to close</small></div></dialog>
+
+  <dialog id="shortcutDialog" class="small-dialog" aria-labelledby="shortcutTitle"><form id="shortcutForm" class="dialog-content"><header class="dialog-title"><div><span class="eyebrow">Quick access</span><h2 id="shortcutTitle">Shortcut</h2></div><button class="icon-button" type="button" data-close="shortcutDialog" aria-label="Close">×</button></header><label>Name<input id="shortcutName" maxlength="32" required placeholder="YouTube"></label><label>Website<input id="shortcutUrl" required placeholder="youtube.com"></label><label>Folder<input id="shortcutFolder" maxlength="24" placeholder="Optional, e.g. Study"></label><label>Icon<input id="shortcutIcon" maxlength="4" placeholder="YT"></label><input id="shortcutIndex" type="hidden" value="-1"><p id="shortcutError" class="error" role="alert"></p><div class="dialog-actions"><button id="deleteShortcutButton" class="danger-button" type="button" hidden>Delete</button><span></span><button type="button" data-close="shortcutDialog">Cancel</button><button class="go-button" type="submit">Save</button></div></form></dialog>
+
+  <dialog id="promptDialog" class="small-dialog" aria-labelledby="promptTitle"><form id="promptForm" class="dialog-content"><header class="dialog-title"><div><span class="eyebrow" id="promptEyebrow">blobby.vip</span><h2 id="promptTitle">Name</h2></div></header><p id="promptDetail" class="muted"></p><label id="promptLabel">Name<input id="promptInput" maxlength="48"></label><div class="dialog-actions"><span></span><button id="promptCancel" type="button">Cancel</button><button id="promptAccept" class="go-button" type="submit">Save</button></div></form></dialog>
+
+  <div id="toastRegion" class="toast-region" aria-live="polite" aria-atomic="true"></div>
+  <input id="importInput" type="file" accept="application/json,.json" hidden><input id="backgroundUpload" type="file" accept="image/*" hidden>
+  <noscript><p class="noscript">blobby.vip needs JavaScript enabled.</p></noscript>
+</body>
+</html>
