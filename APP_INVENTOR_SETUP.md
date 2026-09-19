@@ -1,8 +1,8 @@
-# blobby.vip v8.1 — MIT App Inventor setup
+# blobby.vip v8.2 — MIT App Inventor setup
 
 blobby.vip is the **full-screen Home/New Tab page**. The real website appears only after navigation. While browsing, `WebViewer_UI` collapses to compact tabs/navigation/bookmarks and `WebViewer_Browser` fills the rest of the app.
 
-v8.1 explicitly sends `HOME` on startup so App Inventor hides `WebViewer_Browser` and shows blobby.vip first.
+v8.2 explicitly sends `HOME` on startup so App Inventor hides `WebViewer_Browser` and shows blobby.vip first.
 
 ## Designer
 
@@ -119,3 +119,7 @@ No extra Designer components are required for:
 - Responsive browser chrome
 
 All of that stays in the GitHub-hosted blobby.vip UI.
+
+
+## Persistent tabs in v8.2
+No new App Inventor blocks are required. `WebViewer_UI` still fills the screen in Home mode, but the HTML tab strip remains visible at the top. `WebViewer_Browser` remains hidden for a Home/New Tab and appears only after navigation. The existing HOME/NAVIGATE/UI_HEIGHT bridge remains unchanged.

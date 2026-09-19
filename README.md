@@ -1,8 +1,8 @@
-# blobby.vip v8.1 — stability & polish release
+# blobby.vip v8.2 — stability & polish release
 
 A performance-first customizable browser controller designed for a two-WebViewer MIT App Inventor app.
 
-## What v8.1 fixes
+## What v8.2 fixes
 
 - Always starts on the **full blobby.vip homepage**, even when old tabs are restored.
 - Sends `HOME` on App Inventor startup so the real browser WebViewer is hidden immediately.
@@ -60,3 +60,7 @@ Virtual tabs reuse one real browser WebViewer to keep memory use, AIA size, and 
 `index.html` remains at the repository root for direct GitHub Pages deployment.
 
 See `APP_INVENTOR_SETUP.md` for the App Inventor bridge blocks.
+
+
+## v8.2 persistent tabs
+Tabs now remain visible on the blobby.vip Home/New Tab page and while browsing. The Home layout reserves a dedicated tab row, preventing overlap with Connected/Settings/Edit Layout/Focus or custom layout items. New Tab opens a fresh blobby.vip tab while the strip stays available for immediate tab switching. Navigation and bookmarks remain website-only to keep Home clean.

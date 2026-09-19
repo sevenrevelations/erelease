@@ -234,3 +234,73 @@ html[data-ui-mode="command"] #browserMenu{
 @media(max-width:700px){
   html[data-base-ui-mode="home"] #addressbarBlock .address-form{grid-template-columns:minmax(0,1fr) auto!important}
 }
+
+
+/* v8.2 persistent-tabs patch -------------------------------------------------
+   Tabs are browser-level chrome and remain available on both Home/New Tab and
+   website views. Home reserves physical space for the strip, so it never
+   overlays the utility bar, address/search block, or custom grid layout. */
+html[data-base-ui-mode="home"] #browserTabs,
+html[data-base-ui-mode="home"] #browserTabs:not([hidden]){
+  display:flex!important;
+  position:absolute!important;
+  top:max(6px,env(safe-area-inset-top))!important;
+  left:clamp(8px,1.3vw,18px)!important;
+  right:clamp(8px,1.3vw,18px)!important;
+  width:auto!important;
+  height:30px!important;
+  min-height:30px!important;
+  z-index:24!important;
+  pointer-events:auto!important;
+  border:1px solid color-mix(in srgb,var(--line) 72%,transparent)!important;
+  border-radius:clamp(8px,calc(var(--radius)*.55),12px)!important;
+  padding:2px 4px 0!important;
+  box-shadow:0 8px 24px rgba(0,0,0,calc(var(--shadow-strength)*.28))!important;
+  overflow:hidden!important;
+}
+html[data-base-ui-mode="home"][data-compact-tabs="false"] #browserTabs{
+  height:34px!important;
+  min-height:34px!important;
+}
+/* Reserve the row before grid tracks are laid out. This is the anti-overlay
+   rule: custom layouts still start below the persistent tab strip. */
+html[data-base-ui-mode="home"] .app-shell:not([data-layout-editing="true"]){
+  padding-top:calc(clamp(10px,1.3vw,18px) + 38px)!important;
+}
+html[data-base-ui-mode="home"][data-compact-tabs="false"] .app-shell:not([data-layout-editing="true"]){
+  padding-top:calc(clamp(10px,1.3vw,18px) + 42px)!important;
+}
+/* The layout editor owns the full canvas; keep the tabs visible but docked so
+   they do not become a draggable layout item or collide with grid handles. */
+html[data-base-ui-mode="home"] .app-shell[data-layout-editing="true"] #browserTabs{
+  position:fixed!important;
+  top:max(6px,env(safe-area-inset-top))!important;
+}
+/* Home keeps the normal homepage search experience; website-only navigation
+   and bookmarks remain conditional exactly as in v8.1. */
+html[data-base-ui-mode="home"] #bookmarksBar{display:none!important}
+html[data-base-ui-mode="home"] #addressbarBlock .nav-cluster,
+html[data-base-ui-mode="home"] #addressbarBlock #bookmarkPageButton,
+html[data-base-ui-mode="home"] #addressbarBlock #browserMenuButton,
+html[data-base-ui-mode="home"] #addressbarBlock #externalButton{display:none!important}
+/* The old utility/status row remains part of the homepage grid and therefore
+   starts below the reserved tab row instead of competing for the same pixels. */
+html[data-base-ui-mode="home"] #topbar{z-index:6}
+html[data-base-ui-mode="home"] #addressbarBlock{z-index:6}
+/* Browser mode keeps the zero-waste stacked chrome from v8.1. */
+html[data-app-mode="true"][data-base-ui-mode="browser"] #browserTabs{
+  position:relative!important;
+  inset:auto!important;
+  left:auto!important;
+  right:auto!important;
+  top:auto!important;
+  width:100%!important;
+  border-radius:0!important;
+}
+@media(max-width:700px){
+  html[data-base-ui-mode="home"] #browserTabs,
+  html[data-base-ui-mode="home"] #browserTabs:not([hidden]){left:8px!important;right:8px!important}
+  html[data-base-ui-mode="home"] .app-shell:not([data-layout-editing="true"]){padding-top:46px!important}
+  html[data-base-ui-mode="home"][data-compact-tabs="false"] .app-shell:not([data-layout-editing="true"]){padding-top:50px!important}
+}
+html[data-performance="true"][data-base-ui-mode="home"] #browserTabs{box-shadow:none!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
