@@ -128,10 +128,6 @@ html[data-rgb=true][data-rgb-panels=true][data-app-mode=true][data-browser-activ
 html[data-rgb=true][data-rgb-panels=true][data-app-mode=true][data-browser-active=true] #bookmarksBar{border-color:color-mix(in srgb,var(--accent) 52%,var(--line))}
 html[data-rgb=true][data-rgb-buttons=true][data-app-mode=true][data-browser-active=true] .browser-tab[aria-selected=true]{box-shadow:inset 0 2px 0 var(--accent)}
 
-/* When a multi-tab session is on the full blobby.vip home page, keep a thin tab switcher reachable. */
-html[data-app-mode=true][data-browser-active=false][data-tabs-visible=true] #browserTabs{display:flex!important;position:fixed;z-index:90;top:4px;left:4px;right:4px;height:30px;border:1px solid color-mix(in srgb,var(--line) 72%,transparent);border-radius:10px;padding-top:1px;background:color-mix(in srgb,var(--panel) 92%,transparent);backdrop-filter:blur(10px)}
-html[data-app-mode=true][data-browser-active=false][data-tabs-visible=true][data-performance=true] #browserTabs{backdrop-filter:none}
-
 @media(max-width:700px){
  html[data-app-mode=true][data-browser-active=true] .address-form{grid-template-columns:auto minmax(64px,1fr) auto auto}
  html[data-app-mode=true][data-browser-active=true] #externalButton{display:none!important}
@@ -151,3 +147,90 @@ html[data-app-mode=true][data-browser-active=false][data-tabs-visible=true][data
 html[data-glass=true]:not([data-performance=true]) .browser-tabs,
 html[data-glass=true]:not([data-performance=true]) .bookmarks-bar,
 html[data-glass=true]:not([data-performance=true])[data-app-mode=true][data-browser-active=true] #addressbarBlock{backdrop-filter:blur(min(var(--blur),14px));-webkit-backdrop-filter:blur(min(var(--blur),14px))}
+
+/* v8.1 stability patch: one authoritative home/browser presentation state. */
+html[data-base-ui-mode="home"] #browserTabs,
+html[data-base-ui-mode="home"] #bookmarksBar{
+  display:none!important;
+  pointer-events:none!important;
+}
+
+/* Home is a true new-tab page: keep the search field, hide browser-only chrome. */
+html[data-base-ui-mode="home"] #addressbarBlock .nav-cluster,
+html[data-base-ui-mode="home"] #addressbarBlock #bookmarkPageButton,
+html[data-base-ui-mode="home"] #addressbarBlock #browserMenuButton,
+html[data-base-ui-mode="home"] #addressbarBlock #externalButton{
+  display:none!important;
+}
+html[data-base-ui-mode="home"] #addressbarBlock .address-form{
+  grid-template-columns:minmax(0,1fr) auto;
+}
+html[data-base-ui-mode="home"] #addressbarBlock .go-button{
+  display:block!important;
+}
+
+/* Browser mode is the only mode allowed to render tabs/bookmarks/browser navigation. */
+html[data-base-ui-mode="browser"] #browserTabs:not([hidden]){
+  display:flex!important;
+}
+html[data-base-ui-mode="browser"] #bookmarksBar:not([hidden]){
+  display:flex!important;
+}
+html[data-base-ui-mode="browser"] #addressbarBlock .nav-cluster{
+  display:flex!important;
+}
+
+/* Retire the old floating home-tab switcher completely. */
+html[data-tabs-visible="true"] #browserTabs{
+  position:static!important;
+  inset:auto!important;
+}
+html[data-base-ui-mode="home"] #browserTabs{
+  display:none!important;
+}
+
+/* Keep browser chrome visually unified and prevent utility/home controls from colliding. */
+html[data-app-mode="true"][data-base-ui-mode="browser"] .app-shell:not([data-layout-editing="true"]) [data-layout-item]:not(#addressbarBlock){
+  display:none!important;
+  pointer-events:none!important;
+}
+html[data-app-mode="true"][data-base-ui-mode="browser"] #browserTabs{
+  position:relative!important;
+  z-index:20;
+  border-radius:0!important;
+  border-left:0!important;
+  border-right:0!important;
+  border-top:0!important;
+  box-shadow:none!important;
+}
+html[data-app-mode="true"][data-base-ui-mode="browser"] #addressbarBlock{
+  position:relative!important;
+  z-index:19;
+  box-shadow:none!important;
+}
+html[data-app-mode="true"][data-base-ui-mode="browser"] #bookmarksBar{
+  position:relative!important;
+  z-index:18;
+  box-shadow:none!important;
+}
+html[data-app-mode="true"][data-base-ui-mode="browser"] .browser-tab[aria-selected="true"]{
+  background:color-mix(in srgb,var(--panel) 96%,var(--accent) 4%);
+  border-bottom-color:transparent;
+}
+
+/* Overlay states are controlled centrally; dialogs/menus stay above the underlying mode. */
+html[data-ui-mode="settings"] #browserMenu,
+html[data-ui-mode="settings"] #bookmarkFolderMenu,
+html[data-ui-mode="layout"] #browserMenu,
+html[data-ui-mode="command"] #browserMenu{
+  display:none!important;
+}
+
+/* Hidden major UI must never intercept clicks. */
+#browserTabs[hidden],#bookmarksBar[hidden],#browserMenu[hidden],#bookmarkFolderMenu[hidden]{
+  pointer-events:none!important;
+}
+
+@media(max-width:700px){
+  html[data-base-ui-mode="home"] #addressbarBlock .address-form{grid-template-columns:minmax(0,1fr) auto!important}
+}

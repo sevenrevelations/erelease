@@ -1,22 +1,32 @@
-# blobby.vip v8
+# blobby.vip v8.1 — stability & polish release
 
 A performance-first customizable browser controller designed for a two-WebViewer MIT App Inventor app.
 
-## v8 highlights
+## What v8.1 fixes
 
-- Full-screen blobby.vip home/new-tab experience
-- Compact, theme-aware browser chrome after navigation
-- Lightweight **virtual tabs** using one real Android WebViewer
-- New tab, close, switch, reorder, session restore, per-tab URL history
-- Back, forward, refresh, Home, address/search bar, bookmark star, overflow menu
-- Optional bookmarks bar with `Ctrl/Cmd + Shift + B`
-- Bookmark add/edit/delete/reorder and lightweight folders
-- Bookmarks/tabs/settings persist with localStorage and settings export/import
-- `UI_HEIGHT|N` App Inventor bridge message automatically minimizes vertical space
-- Tabs/navigation/bookmarks inherit built-in and custom theme color variables instantly
-- Performance Mode strips expensive browser-chrome effects
-- Responsive Chromebook, desktop, and phone behavior
-- No iframe browsing and no heavy frontend framework
+- Always starts on the **full blobby.vip homepage**, even when old tabs are restored.
+- Sends `HOME` on App Inventor startup so the real browser WebViewer is hidden immediately.
+- Tabs, browser navigation, and bookmarks appear **only in Browser Mode**.
+- Removes the old floating-tab behavior that could overlap the homepage utility bar (`Connected`, Settings, Edit Layout, etc.).
+- Home no longer destroys the current virtual tab or its history; it only changes the visible UI back to blobby.vip.
+- Uses a centralized UI state controller for Home, Browser, Settings/Layout/Command/Modal overlays.
+- Browser chrome height is still sent through `UI_HEIGHT|N` and collapses/expands automatically.
+- Hidden browser UI cannot intercept clicks.
+- Browser chrome keeps theme/custom-color integration and Performance Mode protections.
+
+## Intended state flow
+
+```text
+Fresh launch
+→ full blobby.vip homepage
+→ search / open URL
+→ compact tabs + navigation + optional bookmarks
+→ actual website in WebViewer_Browser
+→ Home
+→ clean full-screen blobby.vip homepage
+```
+
+Restored virtual tabs remain saved in the background but do **not** force Browser Mode at startup.
 
 ## Architecture
 
@@ -33,26 +43,20 @@ WebViewer_Browser
 └── The one real external website WebView
 ```
 
-Virtual tabs save each tab's URL/history/title metadata and reuse `WebViewer_Browser` when switching. This avoids creating multiple Android WebViews, which is substantially friendlier to low-end Chromebooks and Android devices.
-
-## Browser chrome heights
-
-The web UI calculates its own required height and sends `UI_HEIGHT|N` to App Inventor. With compact tabs, the target is roughly 72px without bookmarks and 100px with the bookmarks bar, rather than permanently reserving a large toolbar.
+Virtual tabs reuse one real browser WebViewer to keep memory use, AIA size, and Chromebook load low.
 
 ## Performance
 
-- Vanilla JavaScript/CSS; no React/Vue/runtime framework
+- Vanilla JavaScript/CSS; no heavy runtime framework
 - One real browser WebView regardless of virtual tab count
 - Debounced localStorage writes
-- Keyed tab DOM updates instead of rebuilding the tab strip unnecessarily
+- Keyed tab DOM updates
 - Event delegation for tab/bookmark actions
-- Ambient/background rendering disabled in App Inventor browser mode
+- Homepage ambient/background rendering disabled while browsing in App Inventor
 - Custom cursor disabled in compact browser mode
 - Existing adaptive low-power canvas caps retained
 - Performance Mode removes blur, large shadows, RGB animation, and nonessential transitions
 
-## Files
-
 `index.html` remains at the repository root for direct GitHub Pages deployment.
 
-See `APP_INVENTOR_SETUP.md` for the exact bridge blocks, including `UI_HEIGHT`, URL synchronization, Home, Back, Forward, and Refresh.
+See `APP_INVENTOR_SETUP.md` for the App Inventor bridge blocks.

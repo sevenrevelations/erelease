@@ -1,12 +1,10 @@
-# blobby.vip v8 — MIT App Inventor setup
+# blobby.vip v8.1 — MIT App Inventor setup
 
-blobby.vip remains the **full-screen home/new-tab page**. After navigation, the UI WebViewer collapses into compact browser chrome containing tabs, navigation, the address bar, and (optionally) bookmarks. The actual website still loads in one separate `WebViewer_Browser`.
+blobby.vip is the **full-screen Home/New Tab page**. The real website appears only after navigation. While browsing, `WebViewer_UI` collapses to compact tabs/navigation/bookmarks and `WebViewer_Browser` fills the rest of the app.
 
-This design intentionally uses **one real browser WebViewer**. Tabs are lightweight virtual tabs in blobby.vip, which keeps the AIA simple and avoids the memory cost of one Android WebView per tab.
+v8.1 explicitly sends `HOME` on startup so App Inventor hides `WebViewer_Browser` and shows blobby.vip first.
 
 ## Designer
-
-Use this structure:
 
 ```text
 Screen1
@@ -14,12 +12,6 @@ Screen1
     ├── WebViewer_UI
     └── WebViewer_Browser
 ```
-
-Recommended starting properties:
-
-### MainContainer
-- Width: Fill parent
-- Height: Fill parent
 
 ### WebViewer_UI
 - Width: Fill parent
@@ -32,246 +24,98 @@ Recommended starting properties:
 - Height: Fill parent
 - Visible: false
 
-Do **not** put external websites in an iframe. `WebViewer_Browser` loads them directly.
-
----
-
-## Bridge messages sent by blobby.vip
+## Bridge messages
 
 ```text
-NAVIGATE|https://example.com/
-BACK|https://previous-url.example/
-FORWARD|https://next-url.example/
-REFRESH
 HOME
-OPEN_EXTERNAL|https://example.com/
+NAVIGATE|https://example.com/
 UI_HEIGHT|72
 UI_HEIGHT|100
+REFRESH
+BACK|https://previous.example/
+FORWARD|https://next.example/
 EXPAND_UI|settings
 RESTORE_UI|browser
 RESTORE_UI|home
+OPEN_EXTERNAL|https://example.com/
 ```
 
-The exact `UI_HEIGHT` number is calculated by the webpage. It changes automatically when compact tabs or the bookmarks bar change. Do not hard-code one large browsing height once `UI_HEIGHT` is wired up.
+## Important: use one IF / ELSE IF chain
 
-Tabs themselves require **no App Inventor tab components**. Selecting a virtual tab simply sends `NAVIGATE` for that tab's saved URL, or `HOME` for a new/home tab.
+Do **not** make six independent `if` blocks that all parse the message. Commands such as `HOME` and `REFRESH` do not contain `|`, so trying to select item 2 from them causes App Inventor runtime errors.
 
----
-
-## Main WebViewStringChange event
-
-Use:
+Use this structure inside:
 
 ```text
 when WebViewer_UI.WebViewStringChange value
 ```
 
-For commands containing `|`, use **Text → split at first** with `value` and `"|"`.
-
-### 1. NAVIGATE
-
-Condition:
-
 ```text
-item 1 of (split at first value at "|") = "NAVIGATE"
+IF get value = "HOME"
+    set WebViewer_Browser.Visible to false
+    set WebViewer_UI.Height to -2
+
+ELSE IF item 1 of (split at first get value at "|") = "UI_HEIGHT"
+    set WebViewer_UI.Height to
+        0 + item 2 of (split at first get value at "|")
+
+ELSE IF get value = "REFRESH"
+    call WebViewer_Browser.Reload
+
+ELSE IF item 1 of (split at first get value at "|") = "NAVIGATE"
+    set WebViewer_Browser.Visible to true
+    call WebViewer_Browser.GoToUrl
+        item 2 of (split at first get value at "|")
+
+ELSE IF item 1 of (split at first get value at "|") = "BACK"
+    call WebViewer_Browser.GoToUrl
+        item 2 of (split at first get value at "|")
+
+ELSE IF item 1 of (split at first get value at "|") = "FORWARD"
+    call WebViewer_Browser.GoToUrl
+        item 2 of (split at first get value at "|")
 ```
 
-Then:
+`-2` means Fill Parent in App Inventor sizing.
 
-```text
-set WebViewer_UI.Height to 100     // small immediate fallback; UI_HEIGHT corrects it
-set WebViewer_Browser.Visible to true
-call WebViewer_Browser.GoToUrl
-    url = item 2 of (split at first value at "|")
-```
+Once `UI_HEIGHT` is working, do not keep a hard-coded `WebViewer_UI.Height = 65/100` inside NAVIGATE. The webpage calculates its own compact height.
 
-After `UI_HEIGHT` is working reliably, the `Height = 100` line is optional because blobby.vip sends its exact height automatically.
+## Keep the active tab synchronized
 
-### 2. HOME
-
-Condition:
-
-```text
-get value = "HOME"
-```
-
-Then:
-
-```text
-set WebViewer_Browser.Visible to false
-set WebViewer_UI.Height to -2
-```
-
-`-2` means **Fill Parent** in App Inventor component sizing.
-
-### 3. BACK
-
-Condition:
-
-```text
-item 1 of (split at first value at "|") = "BACK"
-```
-
-Then:
-
-```text
-call WebViewer_Browser.GoToUrl
-    url = item 2 of (split at first value at "|")
-```
-
-Use the URL supplied by blobby.vip instead of native `GoBack`. Virtual tabs maintain separate lightweight histories, while a single native WebView history would mix pages from different virtual tabs.
-
-### 4. FORWARD
-
-Same as BACK, except compare item 1 with `"FORWARD"` and navigate to item 2.
-
-### 5. REFRESH
-
-Condition:
-
-```text
-get value = "REFRESH"
-```
-
-Then:
-
-```text
-call WebViewer_Browser.Reload
-```
-
-### 6. UI_HEIGHT — important
-
-Condition:
-
-```text
-item 1 of (split at first value at "|") = "UI_HEIGHT"
-```
-
-Then set:
-
-```text
-WebViewer_UI.Height = item 2
-```
-
-If App Inventor complains that item 2 is text, force it to a number with a Math block such as:
-
-```text
-0 + item 2
-```
-
-Typical heights are roughly:
-
-```text
-Bookmarks hidden:  ~72 px
-Bookmarks visible: ~100 px
-```
-
-The actual number may vary slightly with compact-tab settings.
-
-### 7. EXPAND_UI
-
-Condition: command (item 1 after split) = `EXPAND_UI`
-
-Then:
-
-```text
-set WebViewer_Browser.Visible to false
-set WebViewer_UI.Height to -2
-```
-
-This lets Settings and Layout Edit use the full screen.
-
-### 8. RESTORE_UI
-
-`RESTORE_UI|browser` means return to browsing:
-
-```text
-set WebViewer_Browser.Visible to true
-```
-
-blobby.vip will immediately send `UI_HEIGHT` again.
-
-`RESTORE_UI|home` means:
-
-```text
-set WebViewer_Browser.Visible to false
-set WebViewer_UI.Height to -2
-```
-
-### 9. OPEN_EXTERNAL (optional)
-
-If you want the ↗ button to open Android's normal browser, handle `OPEN_EXTERNAL|url` with the Activity Starter or your preferred external-browser method. It is optional.
-
----
-
-## Keep the tab URL/history synchronized
-
-This step is strongly recommended. It lets blobby.vip learn about links clicked *inside* the actual website, not only URLs typed into blobby.vip.
-
-Use the browser WebViewer's page-loaded event:
+Keep this separate event:
 
 ```text
 when WebViewer_Browser.PageLoaded url
 ```
 
-Set:
+Then:
 
 ```text
-WebViewer_UI.WebViewString = join "URL|" url
+set WebViewer_UI.WebViewString to
+    join "URL|" get url
 ```
 
-The blobby.vip JavaScript polls the UI WebViewer's inbound WebViewString and updates the active virtual tab, address bar, history state, and bookmark star.
+This updates the virtual tab after a user clicks links inside the real website.
 
-If a future WebView extension exposes page titles or favicons, blobby.vip already understands optional inbound messages:
+Optional future inbound messages:
 
 ```text
 TITLE|Actual page title
 FAVICON|https://example.com/favicon.ico
 ```
 
-Without those, it gracefully uses the site's hostname / first letter.
+## Tabs/bookmarks/navigation
 
----
-
-## Browser UI handled entirely by blobby.vip
-
-No extra App Inventor Designer components are needed for:
+No extra Designer components are required for:
 
 - Virtual tabs
-- New tab / close tab
-- Tab reorder
-- Tab session restore
-- Back / forward UI
-- Refresh button
-- Address bar
-- Home button
-- Bookmark star
-- Bookmarks bar
-- Bookmark folders
-- Bookmark add/edit/delete/reorder
+- New/close/switch/reorder tabs
+- Back / Forward / Refresh / Home UI
+- Address/search bar
+- Bookmark star and bookmarks bar
 - Ctrl/Cmd + Shift + B
-- Browser overflow menu
-- Custom-theme styling
-- Responsive mobile layout
+- Browser menu
+- Theme integration
+- Responsive browser chrome
 
-This is deliberate: updating the GitHub Pages files can change the browser interface without rebuilding the AIA.
-
----
-
-## Keyboard shortcuts inside blobby.vip
-
-```text
-Ctrl/Cmd + L             Focus address bar
-Ctrl/Cmd + T             New tab
-Ctrl/Cmd + W             Close current tab
-Ctrl/Cmd + Tab           Next tab
-Ctrl/Cmd + Shift + Tab   Previous tab
-Ctrl/Cmd + R             Refresh
-Alt + Left               Back
-Alt + Right              Forward
-Ctrl/Cmd + Shift + B     Toggle bookmarks bar
-Ctrl/Cmd + K             Command palette
-Ctrl/Cmd + ,             Settings
-```
-
-On Android touch devices, the visible buttons/menu provide the same actions.
+All of that stays in the GitHub-hosted blobby.vip UI.
