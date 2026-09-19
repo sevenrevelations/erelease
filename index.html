@@ -8,15 +8,34 @@
   <title>blobby.vip</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='18' fill='%238da2ff'/%3E%3Ctext x='17' y='47' font-size='48' font-family='Arial' font-weight='700' fill='%23080a12'%3Eb%3C/text%3E%3C/svg%3E">
   <link rel="stylesheet" href="./style.css">
+  <link rel="stylesheet" href="./license.css">
   <script src="./core.js"></script>
   <script src="./themes.js"></script>
   <script src="./browser-bridge.js"></script>
   <script src="./effects.js"></script>
   <script src="./cursor.js"></script>
   <script src="./layout.js"></script>
-  <script src="./app.js" defer></script>
+  <script src="./config.js"></script>
+  <script src="./license.js" defer></script>
 </head>
-<body>
+<body data-license-state="booting" data-license-ui="idle">
+  <section id="licenseGate" class="license-gate" aria-labelledby="licenseTitle">
+    <div class="license-card">
+      <div class="license-brand"><span class="license-brand-dot" aria-hidden="true"></span><span>blobby.vip</span></div>
+      <h1 id="licenseTitle">Welcome.</h1>
+      <p>Enter your access key to continue to blobby.vip.</p>
+      <form id="licenseForm" class="license-form" novalidate>
+        <label for="licenseKeyInput">Access key</label>
+        <input id="licenseKeyInput" class="license-key-input" type="text" inputmode="text" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="39" placeholder="BLOBBY-____-____-____-____" aria-describedby="licenseStatus licenseDetail">
+        <button id="licenseSubmit" class="license-submit" type="submit">Unlock blobby</button>
+      </form>
+      <div class="license-feedback" role="status" aria-live="polite">
+        <strong id="licenseStatus">Starting secure access…</strong>
+        <span id="licenseDetail"></span>
+      </div>
+      <div class="license-meta"><span>One key · one active installation</span><a id="licenseSupport" href="#" hidden>Contact admin</a></div>
+    </div>
+  </section>
   <div id="backgroundLayer" class="background-layer" aria-hidden="true"></div>
   <div id="ambientLayer" class="ambient-layer" aria-hidden="true">
     <div class="aurora-layer"></div><div class="fog-layer"></div><div class="wave-layer"></div><div class="cloud-layer"></div><div class="digital-grid-layer"></div><div class="neon-horizon-layer"></div><div class="liquid-layer"></div><div class="light-rays-layer"></div>

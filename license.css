@@ -1,0 +1,53 @@
+/* blobby.vip v9 access gate. Kept independent from browser layout so licensing
+   cannot cause tab/home/browser overlap or alter the v8.2 grid. */
+body[data-license-state="booting"] #appShell,
+body[data-license-state="locked"] #appShell,
+body[data-license-state="booting"] #ambientLayer,
+body[data-license-state="locked"] #ambientLayer,
+body[data-license-state="booting"] #customCursor,
+body[data-license-state="locked"] #customCursor,
+body[data-license-state="booting"] dialog,
+body[data-license-state="locked"] dialog,
+body[data-license-state="booting"] #toastRegion,
+body[data-license-state="locked"] #toastRegion { display:none!important; pointer-events:none!important; }
+body[data-license-state="unlocked"] #licenseGate { display:none!important; pointer-events:none!important; }
+
+.license-gate{
+  position:fixed; inset:0; z-index:2147483646; display:grid; place-items:center;
+  padding:24px; overflow:auto; color:#f4f6ff;
+  background:
+    radial-gradient(circle at 20% 20%,rgba(104,120,255,.16),transparent 34%),
+    radial-gradient(circle at 80% 75%,rgba(185,107,255,.13),transparent 38%),
+    linear-gradient(145deg,#070912,#0c1020 58%,#120b1d);
+  font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+}
+.license-card{
+  width:min(460px,100%); border:1px solid rgba(183,195,255,.18); border-radius:24px;
+  padding:clamp(24px,5vw,40px); background:rgba(14,17,31,.78); backdrop-filter:blur(14px);
+  -webkit-backdrop-filter:blur(14px); box-shadow:0 28px 80px rgba(0,0,0,.42);
+}
+.license-brand{display:flex;align-items:center;gap:10px;font-weight:760;letter-spacing:-.03em;font-size:18px;margin-bottom:32px}
+.license-brand-dot{width:12px;height:12px;border-radius:999px;background:#8da2ff;box-shadow:0 0 24px rgba(141,162,255,.7)}
+.license-card h1{font-size:clamp(30px,7vw,42px);letter-spacing:-.05em;line-height:1.02;margin:0 0 10px}
+.license-card>p{color:#aeb7cf;margin:0 0 24px;line-height:1.55}
+.license-form{display:grid;gap:12px}
+.license-form label{font-size:12px;font-weight:700;color:#bcc5dc;text-transform:uppercase;letter-spacing:.08em}
+.license-key-input{
+  width:100%;box-sizing:border-box;border:1px solid rgba(184,195,255,.24);border-radius:14px;
+  padding:15px 16px;background:rgba(6,8,18,.72);color:#fff;font:650 15px/1.2 ui-monospace,SFMono-Regular,Menlo,monospace;
+  letter-spacing:.025em;outline:none;text-transform:uppercase;
+}
+.license-key-input:focus{border-color:#8da2ff;box-shadow:0 0 0 3px rgba(141,162,255,.16)}
+.license-submit{border:0;border-radius:14px;padding:14px 18px;font-weight:780;font-size:15px;color:#09101d;background:linear-gradient(135deg,#aebcff,#8da2ff 58%,#c4a6ff);cursor:pointer}
+.license-submit:hover{filter:brightness(1.05)}.license-submit:disabled,.license-key-input:disabled{opacity:.62;cursor:wait}
+.license-feedback{min-height:56px;margin-top:18px;padding:12px 14px;border-radius:14px;background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.07)}
+.license-feedback strong{display:block;font-size:14px;margin-bottom:4px}.license-feedback span{display:block;color:#aeb7cf;font-size:12px;line-height:1.45}
+body[data-license-ui="success"] .license-feedback{border-color:rgba(105,224,166,.28);background:rgba(48,148,91,.08)}
+body[data-license-ui="invalid"] .license-feedback,body[data-license-ui="blocked"] .license-feedback{border-color:rgba(255,131,145,.25);background:rgba(170,52,68,.08)}
+body[data-license-ui="offline"] .license-feedback{border-color:rgba(255,203,109,.24);background:rgba(164,111,32,.08)}
+.license-meta{display:flex;justify-content:space-between;gap:12px;align-items:center;margin-top:18px;font-size:12px;color:#8993ab}
+.license-meta a{color:#aebcff;text-decoration:none}.license-meta a:hover{text-decoration:underline}
+@media(max-width:520px){.license-gate{padding:14px}.license-card{border-radius:20px;padding:24px 18px}.license-meta{align-items:flex-start;flex-direction:column}}
+@media(prefers-reduced-motion:reduce){.license-submit{transition:none!important}}
+@media(max-width:700px),(prefers-reduced-transparency:reduce){.license-card{backdrop-filter:none;-webkit-backdrop-filter:none;background:#0e111f}}
+body[data-license-state="locked"]{overflow:hidden}
