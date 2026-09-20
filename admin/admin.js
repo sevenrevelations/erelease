@@ -26,12 +26,15 @@ if (configured) {
   )
 }
 
-const fmt = v => v ? new Date(v).toLocaleString() : '—'
+const fmt = v =>
+  v ? new Date(v).toLocaleString() : '—'
 
 const el = (tag, cls = '', text = '') => {
   const n = document.createElement(tag)
+
   if (cls) n.className = cls
   if (text) n.textContent = text
+
   return n
 }
 
@@ -44,33 +47,47 @@ function setStatus(text) {
 }
 
 function expirationFromControls(prefix) {
-  const value = $(prefix + 'Expiration').value
+  const value =
+    $(prefix + 'Expiration').value
 
-  if (value === 'keep') return undefined
-  if (value === 'lifetime') return { kind: 'lifetime' }
+  if (value === 'keep') {
+    return undefined
+  }
+
+  if (value === 'lifetime') {
+    return {
+      kind: 'lifetime'
+    }
+  }
 
   if (value === 'custom') {
-    const raw = $(prefix + 'Custom').value
+    const raw =
+      $(prefix + 'Custom').value
 
     if (!raw) {
-      throw Error('Choose an expiration date and time.')
+      throw Error(
+        'Choose an expiration date and time.'
+      )
     }
 
     return {
       kind: 'fixed',
-      expiresAt: new Date(raw).toISOString()
+      expiresAt:
+        new Date(raw).toISOString()
     }
   }
 
   return {
     kind: 'duration',
     days: Number(value),
-    starts: $(prefix + 'Starts').value
+    starts:
+      $(prefix + 'Starts').value
   }
 }
 
 function syncExp(prefix) {
-  const v = $(prefix + 'Expiration').value
+  const v =
+    $(prefix + 'Expiration').value
 
   $(prefix + 'StartsWrap').hidden =
     !['1', '7', '30', '90'].includes(v)
@@ -79,9 +96,16 @@ function syncExp(prefix) {
     v !== 'custom'
 }
 
+
+// =============================================================
+// EDGE FUNCTION REQUEST
+// =============================================================
+
 async function edge(action, payload = {}) {
   if (!session?.access_token) {
-    throw Error('Your admin session has expired.')
+    throw Error(
+      'Your admin session has expired.'
+    )
   }
 
   const res = await fetch(
@@ -91,9 +115,15 @@ async function edge(action, payload = {}) {
       method: 'POST',
 
       headers: {
-        'Content-Type': 'application/json',
-        'apikey': C.SUPABASE_PUBLISHABLE_KEY,
-        'Authorization': 'Bearer ' + session.access_token
+        'Content-Type':
+          'application/json',
+
+        'apikey':
+          C.SUPABASE_PUBLISHABLE_KEY,
+
+        'Authorization':
+          'Bearer ' +
+          session.access_token
       },
 
       body: JSON.stringify({
@@ -117,7 +147,10 @@ async function edge(action, payload = {}) {
     )
   }
 
-  if (!res.ok || body.ok === false) {
+  if (
+    !res.ok ||
+    body.ok === false
+  ) {
     const messages = {
       person_already_has_key:
         'That assigned person/name already has a license. Edit or reset the existing license instead of creating a second key.',
@@ -129,7 +162,16 @@ async function edge(action, payload = {}) {
         'Enter an assigned name.',
 
       expired:
-        'This license has already expired and cannot be reactivated.'
+        'This license has already expired and cannot be reactivated.',
+
+      key_not_recoverable:
+        'This key was created before View Key was enabled, so the original full key cannot be recovered.',
+
+      key_decryption_failed:
+        'The stored key could not be decrypted. Check the license encryption configuration.',
+
+      not_found:
+        'The license could not be found.'
     }
 
     throw Error(
@@ -142,13 +184,22 @@ async function edge(action, payload = {}) {
   return body
 }
 
+
+// =============================================================
+// LOAD LICENSES
+// =============================================================
+
 async function loadLicenses() {
-  setStatus('Loading licenses…')
+  setStatus(
+    'Loading licenses…'
+  )
 
   try {
-    const r = await edge('list')
+    const r =
+      await edge('list')
 
-    licenses = r.licenses || []
+    licenses =
+      r.licenses || []
 
     render()
 
@@ -160,9 +211,17 @@ async function loadLicenses() {
   }
 }
 
+
+// =============================================================
+// RENDER LICENSE CARDS
+// =============================================================
+
 function render() {
   const q =
-    $('searchInput').value.trim().toLowerCase()
+    $('searchInput')
+      .value
+      .trim()
+      .toLowerCase()
 
   const f =
     $('statusFilter').value
@@ -172,15 +231,27 @@ function render() {
 
   list.replaceChildren()
 
-  const rows = licenses.filter(
-    x =>
-      (f === 'all' || x.status === f) &&
-      (
-        !q ||
-        x.assignedName.toLowerCase().includes(q) ||
-        x.keyHint.toLowerCase().includes(q)
-      )
-  )
+  const rows =
+    licenses.filter(
+      x =>
+        (
+          f === 'all' ||
+          x.status === f
+        ) &&
+        (
+          !q ||
+          String(
+            x.assignedName || ''
+          )
+            .toLowerCase()
+            .includes(q) ||
+          String(
+            x.keyHint || ''
+          )
+            .toLowerCase()
+            .includes(q)
+        )
+    )
 
   if (!rows.length) {
     list.append(
@@ -196,13 +267,23 @@ function render() {
 
   for (const x of rows) {
     const card =
-      el('article', 'license-card')
+      el(
+        'article',
+        'license-card'
+      )
 
     const head =
-      el('div', 'license-head')
+      el(
+        'div',
+        'license-head'
+      )
 
     const name =
-      el('div', 'license-name', x.assignedName)
+      el(
+        'div',
+        'license-name',
+        x.assignedName
+      )
 
     const pill =
       el(
@@ -211,7 +292,10 @@ function render() {
         x.status
       )
 
-    head.append(name, pill)
+    head.append(
+      name,
+      pill
+    )
 
     const hint =
       el(
@@ -221,18 +305,34 @@ function render() {
       )
 
     const meta =
-      el('div', 'license-meta')
+      el(
+        'div',
+        'license-meta'
+      )
 
     const pairs = [
-      ['Created', fmt(x.createdAt)],
-      ['Activated', fmt(x.activatedAt)],
-      ['Last verified', fmt(x.lastVerifiedAt)],
+      [
+        'Created',
+        fmt(x.createdAt)
+      ],
+
+      [
+        'Activated',
+        fmt(x.activatedAt)
+      ],
+
+      [
+        'Last verified',
+        fmt(x.lastVerifiedAt)
+      ],
+
       [
         'Expires',
         x.expiresAt
           ? fmt(x.expiresAt)
           : 'Lifetime'
       ],
+
       [
         'Installation',
         x.hasInstallation
@@ -241,11 +341,19 @@ function render() {
       ]
     ]
 
-    for (const [k, v] of pairs) {
-      const d = el('div')
+    for (
+      const [k, v] of pairs
+    ) {
+      const d =
+        el('div')
 
       d.append(
-        el('strong', '', k),
+        el(
+          'strong',
+          '',
+          k
+        ),
+
         document.createTextNode(v)
       )
 
@@ -256,23 +364,48 @@ function render() {
       el(
         'div',
         'license-notes',
-        x.notes || 'No admin notes.'
+        x.notes ||
+          'No admin notes.'
       )
 
     const actions =
-      el('div', 'license-actions')
+      el(
+        'div',
+        'license-actions'
+      )
+
+
+    // EDIT
 
     const edit =
-      el('button', '', 'Edit')
+      el(
+        'button',
+        '',
+        'Edit'
+      )
 
     edit.onclick =
       () => openEdit(x)
 
+    actions.append(edit)
+
+
+    // AUDIT
+
     const audit =
-      el('button', '', 'Audit')
+      el(
+        'button',
+        '',
+        'Audit'
+      )
 
     audit.onclick =
       () => openAudit(x)
+
+    actions.append(audit)
+
+
+    // RESET INSTALLATION
 
     const reset =
       el(
@@ -283,22 +416,50 @@ function render() {
 
     reset.disabled =
       !x.hasInstallation ||
-      ['revoked', 'expired'].includes(x.status)
+      [
+        'revoked',
+        'expired'
+      ].includes(x.status)
 
     reset.onclick =
       () => resetInstall(x)
 
-    actions.append(
-      edit,
-      audit,
-      reset
-    )
+    actions.append(reset)
 
-    // ---------------------------------------------------------
+
+    // =========================================================
+    // VIEW KEY
+    //
+    // Only displayed when the backend says this license has
+    // an encrypted recoverable key.
+    // =========================================================
+
+    if (x.canViewKey) {
+      const viewKey =
+        el(
+          'button',
+          '',
+          'View Key'
+        )
+
+      viewKey.onclick =
+        () =>
+          viewLicenseKey(x)
+
+      actions.append(
+        viewKey
+      )
+    }
+
+
+    // =========================================================
     // REVOKE / REACTIVATE
-    // ---------------------------------------------------------
+    // =========================================================
 
-    if (x.status === 'revoked') {
+    if (
+      x.status ===
+      'revoked'
+    ) {
       const reactivate =
         el(
           'button',
@@ -307,9 +468,12 @@ function render() {
         )
 
       reactivate.onclick =
-        () => reactivateLicense(x)
+        () =>
+          reactivateLicense(x)
 
-      actions.append(reactivate)
+      actions.append(
+        reactivate
+      )
     } else {
       const revoke =
         el(
@@ -319,10 +483,14 @@ function render() {
         )
 
       revoke.onclick =
-        () => revokeLicense(x)
+        () =>
+          revokeLicense(x)
 
-      actions.append(revoke)
+      actions.append(
+        revoke
+      )
     }
+
 
     card.append(
       head,
@@ -336,38 +504,129 @@ function render() {
   }
 }
 
+
+// =============================================================
+// GENERATE DIALOG
+// =============================================================
+
 function openGenerate() {
   $('genName').value = ''
   $('genNotes').value = ''
-  $('genExpiration').value = 'lifetime'
-  $('genStarts').value = 'activation'
+
+  $('genExpiration').value =
+    'lifetime'
+
+  $('genStarts').value =
+    'activation'
+
   $('genCustom').value = ''
-  $('genError').textContent = ''
+
+  $('genError').textContent =
+    ''
 
   syncExp('gen')
 
-  $('generateDialog').showModal()
+  $('generateDialog')
+    .showModal()
 
   setTimeout(
-    () => $('genName').focus(),
+    () =>
+      $('genName').focus(),
     30
   )
 }
 
+
+// =============================================================
+// EDIT DIALOG
+// =============================================================
+
 function openEdit(x) {
-  $('editId').value = x.id
-  $('editTitle').textContent = x.assignedName
-  $('editName').value = x.assignedName
-  $('editNotes').value = x.notes || ''
-  $('editExpiration').value = 'keep'
-  $('editStarts').value = 'activation'
-  $('editCustom').value = ''
-  $('editError').textContent = ''
+  $('editId').value =
+    x.id
+
+  $('editTitle').textContent =
+    x.assignedName
+
+  $('editName').value =
+    x.assignedName
+
+  $('editNotes').value =
+    x.notes || ''
+
+  $('editExpiration').value =
+    'keep'
+
+  $('editStarts').value =
+    'activation'
+
+  $('editCustom').value =
+    ''
+
+  $('editError').textContent =
+    ''
 
   syncExp('edit')
 
-  $('editDialog').showModal()
+  $('editDialog')
+    .showModal()
 }
+
+
+// =============================================================
+// VIEW FULL KEY
+// =============================================================
+
+async function viewLicenseKey(x) {
+  try {
+    const r =
+      await edge(
+        'view_key',
+        {
+          licenseId: x.id
+        }
+      )
+
+    const key =
+      String(r.key || '')
+
+    if (!key) {
+      throw Error(
+        'The full key could not be retrieved.'
+      )
+    }
+
+    const shouldCopy =
+      confirm(
+        `${x.assignedName}'s access key:\n\n${key}\n\nPress OK to copy this key to your clipboard.`
+      )
+
+    if (!shouldCopy) {
+      return
+    }
+
+    try {
+      await navigator.clipboard
+        .writeText(key)
+
+      alert(
+        'Key copied to clipboard.'
+      )
+    } catch {
+      prompt(
+        'Copy the key below:',
+        key
+      )
+    }
+  } catch (e) {
+    alert(e.message)
+  }
+}
+
+
+// =============================================================
+// RESET INSTALLATION
+// =============================================================
 
 async function resetInstall(x) {
   if (
@@ -392,6 +651,11 @@ async function resetInstall(x) {
   }
 }
 
+
+// =============================================================
+// REVOKE
+// =============================================================
+
 async function revokeLicense(x) {
   if (
     !confirm(
@@ -415,8 +679,9 @@ async function revokeLicense(x) {
   }
 }
 
+
 // =============================================================
-// REACTIVATE LICENSE
+// REACTIVATE
 // =============================================================
 
 async function reactivateLicense(x) {
@@ -446,36 +711,49 @@ async function reactivateLicense(x) {
   }
 }
 
+
+// =============================================================
+// AUDIT
+// =============================================================
+
 async function openAudit(x) {
   $('auditTitle').textContent =
     x.assignedName
 
-  $('auditList').replaceChildren(
-    el(
-      'div',
-      'muted',
-      'Loading…'
+  $('auditList')
+    .replaceChildren(
+      el(
+        'div',
+        'muted',
+        'Loading…'
+      )
     )
-  )
 
-  $('auditDialog').showModal()
+  $('auditDialog')
+    .showModal()
 
   try {
-    const r = await edge(
-      'audit',
-      {
-        licenseId: x.id
-      }
-    )
+    const r =
+      await edge(
+        'audit',
+        {
+          licenseId: x.id
+        }
+      )
 
     const list =
       $('auditList')
 
     list.replaceChildren()
 
-    for (const a of r.audit || []) {
+    for (
+      const a of r.audit || []
+    ) {
       const n =
-        el('div', 'audit-item')
+        el(
+          'div',
+          'audit-item'
+        )
 
       n.append(
         el(
@@ -493,7 +771,9 @@ async function openAudit(x) {
 
       if (
         a.detail &&
-        Object.keys(a.detail).length
+        Object.keys(
+          a.detail
+        ).length
       ) {
         n.append(
           el(
@@ -511,7 +791,9 @@ async function openAudit(x) {
       list.append(n)
     }
 
-    if (!(r.audit || []).length) {
+    if (
+      !(r.audit || []).length
+    ) {
       list.append(
         el(
           'div',
@@ -521,76 +803,99 @@ async function openAudit(x) {
       )
     }
   } catch (e) {
-    $('auditList').replaceChildren(
-      el(
-        'div',
-        'error',
-        e.message
+    $('auditList')
+      .replaceChildren(
+        el(
+          'div',
+          'error',
+          e.message
+        )
       )
-    )
   }
 }
+
 
 // =============================================================
 // LOGIN
 // =============================================================
 
-$('loginForm').addEventListener(
-  'submit',
+$('loginForm')
+  .addEventListener(
+    'submit',
 
-  async e => {
-    e.preventDefault()
+    async e => {
+      e.preventDefault()
 
-    setLoginError('')
+      setLoginError('')
 
-    if (!configured) {
-      setLoginError(
-        'Owner setup is incomplete. Configure ../config.js first.'
-      )
+      if (!configured) {
+        setLoginError(
+          'Owner setup is incomplete. Configure ../config.js first.'
+        )
 
-      return
+        return
+      }
+
+      $('loginButton').disabled =
+        true
+
+      const {
+        data,
+        error
+      } =
+        await supabase.auth
+          .signInWithPassword({
+            email:
+              $('email')
+                .value
+                .trim(),
+
+            password:
+              $('password')
+                .value
+          })
+
+      $('loginButton').disabled =
+        false
+
+      if (error) {
+        setLoginError(
+          'Sign in failed. Check your administrator credentials.'
+        )
+
+        return
+      }
+
+      session =
+        data.session
+
+      await showDashboard()
     }
+  )
 
-    $('loginButton').disabled = true
 
-    const {
-      data,
-      error
-    } =
-      await supabase.auth.signInWithPassword({
-        email:
-          $('email').value.trim(),
-
-        password:
-          $('password').value
-      })
-
-    $('loginButton').disabled = false
-
-    if (error) {
-      setLoginError(
-        'Sign in failed. Check your administrator credentials.'
-      )
-
-      return
-    }
-
-    session = data.session
-
-    await showDashboard()
-  }
-)
+// =============================================================
+// LOGOUT
+// =============================================================
 
 $('logoutButton').onclick =
   async () => {
-    await supabase.auth.signOut()
+    await supabase.auth
+      .signOut()
 
     session = null
 
-    $('dashboard').hidden = true
+    $('dashboard').hidden =
+      true
 
-    $('loginView').hidden = false
+    $('loginView').hidden =
+      false
   }
+
+
+// =============================================================
+// BUTTON EVENTS
+// =============================================================
 
 $('generateButton').onclick =
   openGenerate
@@ -611,22 +916,35 @@ $('editExpiration').onchange =
   () => syncExp('edit')
 
 $('closeKey').onclick =
-  () => $('keyDialog').close()
+  () =>
+    $('keyDialog').close()
+
+$('closeAudit').onclick =
+  () =>
+    $('auditDialog').close()
+
+
+// =============================================================
+// COPY KEY AFTER GENERATION
+// =============================================================
 
 $('copyKey').onclick =
   async () => {
     try {
-      await navigator.clipboard.writeText(
-        $('generatedKey').textContent
-      )
+      await navigator.clipboard
+        .writeText(
+          $('generatedKey')
+            .textContent
+        )
 
       $('copyKey').textContent =
         'Copied'
 
       setTimeout(
         () =>
-          $('copyKey').textContent =
-            'Copy key',
+          $('copyKey')
+            .textContent =
+              'Copy key',
         1200
       )
     } catch {
@@ -636,114 +954,144 @@ $('copyKey').onclick =
     }
   }
 
-$('closeAudit').onclick =
-  () => $('auditDialog').close()
 
 // =============================================================
 // GENERATE FORM
 // =============================================================
 
-$('generateForm').addEventListener(
-  'submit',
+$('generateForm')
+  .addEventListener(
+    'submit',
 
-  async e => {
-    e.preventDefault()
+    async e => {
+      e.preventDefault()
 
-    $('genError').textContent = ''
+      $('genError')
+        .textContent = ''
 
-    try {
-      const expiration =
-        expirationFromControls('gen')
+      try {
+        const expiration =
+          expirationFromControls(
+            'gen'
+          )
 
-      $('genSubmit').disabled = true
+        $('genSubmit').disabled =
+          true
 
-      const r =
-        await edge(
-          'generate',
-          {
-            assignedName:
-              $('genName').value.trim(),
+        const r =
+          await edge(
+            'generate',
+            {
+              assignedName:
+                $('genName')
+                  .value
+                  .trim(),
 
-            notes:
-              $('genNotes').value.trim(),
+              notes:
+                $('genNotes')
+                  .value
+                  .trim(),
 
-            expiration
-          }
-        )
+              expiration
+            }
+          )
 
-      $('genSubmit').disabled = false
+        $('genSubmit').disabled =
+          false
 
-      $('generateDialog').close()
+        $('generateDialog')
+          .close()
 
-      $('generatedKey').textContent =
-        r.key
+        $('generatedKey')
+          .textContent =
+            r.key
 
-      $('keyDialog').showModal()
+        $('keyDialog')
+          .showModal()
 
-      await loadLicenses()
-    } catch (err) {
-      $('genSubmit').disabled = false
+        await loadLicenses()
+      } catch (err) {
+        $('genSubmit').disabled =
+          false
 
-      $('genError').textContent =
-        err.message
+        $('genError')
+          .textContent =
+            err.message
+      }
     }
-  }
-)
+  )
+
 
 // =============================================================
 // EDIT FORM
 // =============================================================
 
-$('editForm').addEventListener(
-  'submit',
+$('editForm')
+  .addEventListener(
+    'submit',
 
-  async e => {
-    e.preventDefault()
+    async e => {
+      e.preventDefault()
 
-    $('editError').textContent = ''
+      $('editError')
+        .textContent = ''
 
-    try {
-      const payload = {
-        licenseId:
-          $('editId').value,
+      try {
+        const payload = {
+          licenseId:
+            $('editId').value,
 
-        assignedName:
-          $('editName').value.trim(),
+          assignedName:
+            $('editName')
+              .value
+              .trim(),
 
-        notes:
-          $('editNotes').value.trim()
+          notes:
+            $('editNotes')
+              .value
+              .trim()
+        }
+
+        const exp =
+          expirationFromControls(
+            'edit'
+          )
+
+        if (
+          exp !== undefined
+        ) {
+          payload.expiration =
+            exp
+        }
+
+        await edge(
+          'update',
+          payload
+        )
+
+        $('editDialog')
+          .close()
+
+        await loadLicenses()
+      } catch (err) {
+        $('editError')
+          .textContent =
+            err.message
       }
-
-      const exp =
-        expirationFromControls('edit')
-
-      if (exp !== undefined) {
-        payload.expiration = exp
-      }
-
-      await edge(
-        'update',
-        payload
-      )
-
-      $('editDialog').close()
-
-      await loadLicenses()
-    } catch (err) {
-      $('editError').textContent =
-        err.message
     }
-  }
-)
+  )
+
 
 // =============================================================
 // DASHBOARD
 // =============================================================
 
 async function showDashboard() {
-  $('loginView').hidden = true
+  $('loginView').hidden =
+    true
 
-  $('dashboard').hidden = false
+  $('dashboard').hidden =
+    false
 
   $('adminEmail').textContent =
     session?.user?.email ||
@@ -751,6 +1099,7 @@ async function showDashboard() {
 
   await loadLicenses()
 }
+
 
 // =============================================================
 // STARTUP
@@ -766,15 +1115,22 @@ async function showDashboard() {
   }
 
   const { data } =
-    await supabase.auth.getSession()
+    await supabase.auth
+      .getSession()
 
-  session = data.session
+  session =
+    data.session
 
-  supabase.auth.onAuthStateChange(
-    (_event, newSession) => {
-      session = newSession
-    }
-  )
+  supabase.auth
+    .onAuthStateChange(
+      (
+        _event,
+        newSession
+      ) => {
+        session =
+          newSession
+      }
+    )
 
   if (session) {
     await showDashboard()
