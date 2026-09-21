@@ -123,3 +123,11 @@ All of that stays in the GitHub-hosted blobby.vip UI.
 
 ## Persistent tabs in v8.2
 No new App Inventor blocks are required. `WebViewer_UI` still fills the screen in Home mode, but the HTML tab strip remains visible at the top. `WebViewer_Browser` remains hidden for a Home/New Tab and appears only after navigation. The existing HOME/NAVIGATE/UI_HEIGHT bridge remains unchanged.
+
+## Community Chat overlay
+
+The included `chat.js` uses the same UI expansion behavior already used by blobby.vip settings. No new App Inventor components are required.
+
+When Chat opens while an external site is active, `WebViewer_UI` is temporarily expanded with `UI_HEIGHT|-2` so the sidebar is usable. Closing Chat restores the normal browser-chrome height. The existing real `WebViewer_Browser` navigation/history logic is unchanged.
+
+Do not add a third WebViewer for Chat; the chat is part of the GitHub-hosted `WebViewer_UI` interface.

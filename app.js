@@ -21,11 +21,19 @@ function currentTab(){let t=state.tabs.find(x=>x.id===state.activeTab);if(!t){t=
 function currentTheme(){return T.getTheme(p.theme,state.customThemes);}
 function appMode(){return B.isAppInventor();}
 const BASE_UI_MODES=new Set(['home','browser']);
-const OVERLAY_UI_MODES=new Set(['settings','layout','command','modal','menu']);
+const OVERLAY_UI_MODES=new Set(['settings','layout','command','modal','menu','chat']);
 function applyUIMode(){const visual=overlayUIMode||baseUIMode;root.dataset.uiMode=visual;root.dataset.baseUiMode=baseUIMode;root.dataset.browserActive=String(baseUIMode==='browser');root.dataset.tabsVisible='true';shell.dataset.uiMode=visual;}
 function setBaseUIMode(mode){if(!BASE_UI_MODES.has(mode))return;baseUIMode=mode;if(!overlayUIMode)applyUIMode();}
 function expandUI(reason='modal'){if(!uiExpanded)overlayReturnMode=baseUIMode;uiExpanded=true;overlayUIMode=OVERLAY_UI_MODES.has(reason)?reason:'modal';applyUIMode();B.send('EXPAND_UI',reason);setTimeout(()=>B.send('UI_HEIGHT','-2'),20);}
 function restoreUI(){uiExpanded=false;overlayUIMode='';baseUIMode=BASE_UI_MODES.has(overlayReturnMode)?overlayReturnMode:baseUIMode;applyUIMode();B.send('RESTORE_UI',baseUIMode);scheduleUIHeight(80);}
+window.BlobbyAppUI=Object.freeze({
+ expand:(reason='chat')=>expandUI(reason),
+ restore:()=>restoreUI(),
+ isExpanded:()=>uiExpanded,
+ baseMode:()=>baseUIMode,
+ performance:()=>!!p.performance,
+ reducedMotion:()=>!!p.reducedMotion
+});
 function syncBridgeBadge(){root.dataset.appMode=String(appMode());$('bridgeBadge').textContent=appMode()?'Connected':'Demo';$('bridgeBadge').classList.toggle('connected',appMode());}
 function applyBackground(){let bg=p.backgroundGradient;if(p.backgroundMode==='solid')bg=p.backgroundSolid;if(p.backgroundMode==='image'&&p.backgroundImage)bg=`url("${String(p.backgroundImage).replace(/"/g,'%22')}")`;root.style.setProperty('--custom-background',bg||p.backgroundGradient);root.style.setProperty('--bg-brightness',p.backgroundBrightness/100);root.style.setProperty('--bg-blur',`${p.backgroundBlur}px`);root.style.setProperty('--bg-opacity',p.backgroundOpacity/100);root.style.setProperty('--bg-overlay',p.backgroundOverlay/100);root.style.setProperty('--bg-size',p.backgroundSize);root.style.setProperty('--bg-position',p.backgroundPosition);}
 function applyNavVisibility(){$('backButton').hidden=!p.showBack;$('forwardButton').hidden=!p.showForward;$('refreshButton').hidden=!p.showRefresh;$('homeButton').hidden=!p.showHome;$('externalButton').hidden=!p.showExternal;}
@@ -193,5 +201,5 @@ function cycleTab(delta=1){if(state.tabs.length<2)return;const i=state.tabs.find
 document.addEventListener('keydown',e=>{const typing=['INPUT','TEXTAREA','SELECT'].includes(document.activeElement.tagName),mod=e.ctrlKey||e.metaKey,key=e.key.toLowerCase(),dialogOpen=!!document.querySelector('dialog[open]');if(e.key==='Escape'){if($('browserMenu')&&!$('browserMenu').hidden)closeBrowserMenu();else if($('bookmarkFolderMenu')&&!$('bookmarkFolderMenu').hidden)closeBookmarkFolderMenu();else if($('bookmarkDialog').open)$('bookmarkDialog').close();else if($('commandDialog').open)$('commandDialog').close();else if($('settingsDialog').open)$('settingsDialog').close();return;}if(!p.keyboardShortcuts)return;if(mod&&key==='l'){e.preventDefault();focusOmnibox(true);}else if(mod&&key==='t'&&!dialogOpen){e.preventDefault();newTab();}else if(mod&&key==='w'&&!dialogOpen){e.preventDefault();closeTab();}else if(mod&&key==='tab'&&!dialogOpen){e.preventDefault();cycleTab(e.shiftKey?-1:1);}else if(mod&&key==='r'&&!dialogOpen){e.preventDefault();refresh();}else if(mod&&e.shiftKey&&key==='b'&&!dialogOpen){e.preventDefault();toggleBookmarksBar();}else if(e.altKey&&e.key==='ArrowLeft'&&!dialogOpen&&!typing){e.preventDefault();back();}else if(e.altKey&&e.key==='ArrowRight'&&!dialogOpen&&!typing){e.preventDefault();forward();}else if(mod&&e.key===','){e.preventDefault();openSettings();}else if(mod&&e.shiftKey&&key==='e'){e.preventDefault();startLayoutEdit();}else if(mod&&(key==='k'||e.key==='/')){e.preventDefault();openCommandPalette();}else if(e.key==='/'&&!typing&&!dialogOpen){e.preventDefault();focusOmnibox(true);}});
 document.addEventListener('visibilitychange',()=>effects.refresh());
 
-setBaseUIMode('home');makeSettings();apply();save();if(appMode())B.send('HOME');scheduleUIHeight(20);focusOmnibox();setTimeout(()=>{if(baseUIMode==='home'&&appMode()){syncBridgeBadge();B.send('HOME');scheduleUIHeight(0);}},650);
+setBaseUIMode('home');makeSettings();apply();save();window.dispatchEvent(new CustomEvent('blobby:app-ready'));if(appMode())B.send('HOME');scheduleUIHeight(20);focusOmnibox();setTimeout(()=>{if(baseUIMode==='home'&&appMode()){syncBridgeBadge();B.send('HOME');scheduleUIHeight(0);}},650);
 })();

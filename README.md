@@ -64,3 +64,11 @@ See `APP_INVENTOR_SETUP.md` for the App Inventor bridge blocks.
 
 ## v8.2 persistent tabs
 Tabs now remain visible on the blobby.vip Home/New Tab page and while browsing. The Home layout reserves a dedicated tab row, preventing overlap with Connected/Settings/Edit Layout/Focus or custom layout items. New Tab opens a fresh blobby.vip tab while the strip stays available for immediate tab switching. Navigation and bookmarks remain website-only to keep Home clean.
+
+## Community Chat integration
+
+This build includes the optional **Blobby Chat** module. It adds a lightweight right-edge chat sidebar with realtime messages, presence, typing, replies, reactions, GIFs, small image/file sharing, profile names/status, unread counts, reporting, and role-based moderation. The official owner role renders a red `[¥]` badge separately from the user's changeable display name.
+
+Chat is lazy-connected: normal browsing does not open Supabase Auth/Realtime until the user opens the chat panel. Performance Mode also disables GIF autoplay and removes expensive chat effects.
+
+See **`CHAT_SETUP.md`** before enabling the feature in production.

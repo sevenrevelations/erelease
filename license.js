@@ -79,8 +79,10 @@
   }
   function showGate(kind = 'idle', text = 'Enter your access key to continue.', more = '') {
     forceLicenseViewport();
+    const wasUnlocked = unlocked;
     unlocked = false;
     document.body.dataset.licenseState = 'locked';
+    if (wasUnlocked) window.dispatchEvent(new CustomEvent('blobby:license-locked'));
     gate.hidden = false;
     message(kind, text, more);
     setTimeout(() => { if (!checking) input.focus(); }, 30);
@@ -105,6 +107,7 @@
     document.body.dataset.licenseState = 'unlocked';
     document.body.dataset.licenseMode = mode;
     loadApp();
+    window.dispatchEvent(new CustomEvent('blobby:license-unlocked', { detail: { mode } }));
   }
 
   function saveActivation(data) {
@@ -273,7 +276,16 @@
 
   window.BlobbyLicense = Object.freeze({
     state: () => ({ unlocked, mode: document.body.dataset.licenseMode || '', configured: configured() }),
-    reverify: verifyWhenDue
+    reverify: verifyWhenDue,
+    chatCredentials: () => {
+      const saved = readJSON(ACTIVATION_KEY, null);
+      return {
+        token: saved?.token || '',
+        installationId: installationId(),
+        assignedName: saved?.assignedName || '',
+        keyHint: saved?.keyHint || ''
+      };
+    }
   });
 
   bootstrap();
