@@ -15,6 +15,7 @@
   };
 
   const PANELS={
+    chat:{title:'Global Chat',eyebrow:'Community',icon:'chat',body:''},
     hub:{title:'Blobby sidebar',eyebrow:'Navigation',icon:'home',body:'The new lightweight sidebar shell is active. Features are being moved here one at a time so the browser stays stable and fast.'},
     dms:{title:'Direct messages',eyebrow:'Coming next',icon:'dm',body:'Private one-to-one conversations will live here. DMs will use stable Blobby profiles, realtime updates, unread counts, replies, reactions, attachments, blocking and private RLS.'},
     groups:{title:'Group chats',eyebrow:'Planned',icon:'groups',body:'Private group conversations will support owners, admins and members without loading until you actually open Groups.'},
@@ -28,7 +29,7 @@
   const ITEMS=[
     {id:'home',label:'Home',icon:'home',action:'home'},
     {separator:true},
-    {id:'chat',label:'Global Chat',icon:'chat',action:'chat'},
+    {id:'chat',label:'Global Chat',icon:'chat',panel:'chat'},
     {id:'dms',label:'DMs',icon:'dm',panel:'dms',soon:true},
     {id:'groups',label:'Groups',icon:'groups',panel:'groups',soon:true},
     {id:'leaderboard',label:'Leaderboard',icon:'leaderboard',panel:'leaderboard',soon:true},
@@ -90,22 +91,22 @@
       setTimeout(()=>window.BlobbyAppUI?.openSettings?.(),0);
       return;
     }
-    if(item.action==='chat'){
-      window.BlobbyPanels?.close();
-      setTimeout(()=>window.BlobbyChat?.open?.(),0);
-      return;
-    }
     if(item.panel)window.BlobbyPanels?.toggle(item.panel);
   }
 
   function renderPanel(id){
     const data=PANELS[id]||PANELS.hub;
     eyebrow.textContent=data.eyebrow;title.textContent=data.title;body.replaceChildren();
+    if(id==='chat'){
+      const host=node('div','blobby-sidebar-chat-host');body.append(host);
+      window.BlobbyChat?.sidebarOpen?.(host);
+      return;
+    }
     const intro=node('section','blobby-sidebar-intro');intro.append(icon(data.icon),node('p','blobby-sidebar-copy'));intro.querySelector('p').textContent=data.body;body.append(intro);
     if(id==='hub'){
       const grid=node('div','blobby-sidebar-status-grid');
       const entries=[['Global Chat','Ready','chat'],['DMs','Next','dm'],['Groups','Planned','groups'],['Leaderboard','Planned','leaderboard'],['Music','Reserved','music']];
-      for(const [name,status,ic] of entries){const card=node('button','blobby-sidebar-status-card');card.type='button';card.append(icon(ic));const copy=node('span');const strong=node('strong');strong.textContent=name;const small=node('small');small.textContent=status;copy.append(strong,small);card.append(copy);if(name==='Global Chat')card.addEventListener('click',()=>activate({action:'chat'}));else card.addEventListener('click',()=>window.BlobbyPanels?.open(name==='DMs'?'dms':name.toLowerCase()));grid.append(card);}body.append(grid);
+      for(const [name,status,ic] of entries){const card=node('button','blobby-sidebar-status-card');card.type='button';card.append(icon(ic));const copy=node('span');const strong=node('strong');strong.textContent=name;const small=node('small');small.textContent=status;copy.append(strong,small);card.append(copy);if(name==='Global Chat')card.addEventListener('click',()=>window.BlobbyPanels?.open('chat'));else card.addEventListener('click',()=>window.BlobbyPanels?.open(name==='DMs'?'dms':name.toLowerCase()));grid.append(card);}body.append(grid);
       const note=node('p','blobby-sidebar-note');note.textContent='Stage 1 only adds the navigation shell and centralized panel manager. No new social or music backend runs yet.';body.append(note);
     }else{
       const note=node('p','blobby-sidebar-note');note.textContent='This destination is intentionally lightweight for now. We will activate it in its own tested stage.';body.append(note);
@@ -115,7 +116,10 @@
   function onPanelChange(e){
     if(!root)return;const d=e.detail||{};
     if(d.open){root.dataset.open='true';root.dataset.panel=d.id||'hub';panel.setAttribute('aria-hidden','false');renderPanel(d.id||'hub');}
-    else if(!window.BlobbyPanels?.active?.()){root.dataset.open='false';delete root.dataset.panel;panel.setAttribute('aria-hidden','true');}
+    else {
+      if(d.id==='chat')window.BlobbyChat?.sidebarClose?.();
+      if(!window.BlobbyPanels?.active?.()){root.dataset.open='false';delete root.dataset.panel;panel.setAttribute('aria-hidden','true');}
+    }
     syncActive();
   }
 
