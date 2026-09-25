@@ -1,0 +1,70 @@
+/* blobby.vip Stage 1 navigation shell
+   Lightweight by design: no libraries, no polling, no background network work. */
+body[data-license-state]:not([data-license-state="unlocked"]) .blobby-sidebar-root{display:none!important}
+.blobby-sidebar-root{position:fixed;inset:0;z-index:165;pointer-events:none;color:var(--ink);font-family:inherit}
+.blobby-sidebar-rail{position:fixed;left:9px;top:50%;transform:translateY(-50%);width:46px;max-height:calc(100svh - 18px);display:none;flex-direction:column;align-items:center;gap:5px;padding:7px 5px;overflow-y:auto;overscroll-behavior:contain;border:1px solid color-mix(in srgb,var(--line) 82%,transparent);border-radius:16px;background:color-mix(in srgb,var(--panel) 90%,transparent);box-shadow:0 14px 38px #0005;pointer-events:auto}
+html[data-ui-mode="home"] .blobby-sidebar-rail,
+html[data-ui-mode="sidebar"] .blobby-sidebar-rail{display:flex}
+html[data-app-mode="true"][data-base-ui-mode="browser"][data-ui-mode="browser"] .blobby-sidebar-rail{display:none!important}
+html[data-app-mode="true"][data-ui-mode="chat"] .blobby-sidebar-rail,
+html[data-app-mode="true"][data-ui-mode="settings"] .blobby-sidebar-rail,
+html[data-app-mode="true"][data-ui-mode="layout"] .blobby-sidebar-rail,
+html[data-app-mode="true"][data-ui-mode="command"] .blobby-sidebar-rail,
+html[data-app-mode="true"][data-ui-mode="modal"] .blobby-sidebar-rail,
+html[data-app-mode="true"][data-ui-mode="menu"] .blobby-sidebar-rail{display:none!important}
+html:not([data-app-mode="true"])[data-base-ui-mode="browser"] .blobby-sidebar-rail{display:flex}
+html[data-glass="true"]:not([data-performance="true"]) .blobby-sidebar-rail,
+html[data-glass="true"]:not([data-performance="true"]) .blobby-sidebar-panel{backdrop-filter:blur(min(var(--blur),14px));-webkit-backdrop-filter:blur(min(var(--blur),14px))}
+
+.blobby-sidebar-brand,.blobby-sidebar-button,.blobby-sidebar-close{position:relative;width:36px;height:36px;min-height:36px;display:grid;place-items:center;border:0;border-radius:11px;background:transparent;color:var(--muted);padding:0;flex:0 0 auto}
+.blobby-sidebar-brand{margin-bottom:1px;background:color-mix(in srgb,var(--accent) 14%,var(--panel2));color:var(--accent);font-size:19px;font-weight:900;letter-spacing:-.08em}
+.blobby-sidebar-brand:hover,.blobby-sidebar-button:hover,.blobby-sidebar-button[data-active="true"]{background:color-mix(in srgb,var(--accent) 12%,var(--panel2));color:var(--ink)}
+.blobby-sidebar-button[data-active="true"]::before{content:"";position:absolute;left:-5px;top:9px;width:2px;height:18px;border-radius:99px;background:var(--accent);box-shadow:0 0 8px color-mix(in srgb,var(--accent) 70%,transparent)}
+.blobby-sidebar-icon{width:18px;height:18px;display:grid;place-items:center;pointer-events:none}
+.blobby-sidebar-icon svg{width:18px;height:18px;display:block;fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round}
+.blobby-sidebar-close .blobby-sidebar-icon svg{width:16px;height:16px}
+.blobby-sidebar-separator{width:24px;height:1px;flex:0 0 1px;margin:2px 0;background:color-mix(in srgb,var(--line) 78%,transparent)}
+.blobby-sidebar-soon{position:absolute;right:5px;top:5px;width:5px;height:5px;border-radius:50%;background:color-mix(in srgb,var(--accent2) 82%,white);box-shadow:0 0 0 2px color-mix(in srgb,var(--panel) 94%,transparent)}
+
+@media(hover:hover) and (pointer:fine){
+ .blobby-sidebar-brand::after,.blobby-sidebar-button::after{content:attr(data-label);position:absolute;left:46px;top:50%;transform:translateY(-50%) translateX(-3px);z-index:4;max-width:190px;padding:5px 8px;border:1px solid var(--line);border-radius:8px;background:color-mix(in srgb,var(--panel) 97%,var(--bg));color:var(--ink);box-shadow:0 8px 22px #0005;font-size:10px;font-weight:650;letter-spacing:0;white-space:nowrap;opacity:0;visibility:hidden;pointer-events:none;transition:opacity .12s ease,transform .12s ease,visibility .12s}
+ .blobby-sidebar-brand:hover::after,.blobby-sidebar-button:hover::after{opacity:1;visibility:visible;transform:translateY(-50%) translateX(0)}
+}
+
+.blobby-sidebar-backdrop{position:fixed;inset:0;display:block;border:0;background:#02040a55;opacity:0;visibility:hidden;pointer-events:none;padding:0;transition:opacity calc(.16s/var(--animation-speed)) ease,visibility calc(.16s/var(--animation-speed)) ease}
+.blobby-sidebar-panel{position:fixed;left:64px;top:9px;bottom:9px;width:min(350px,calc(100vw - 76px));display:grid;grid-template-rows:auto minmax(0,1fr);overflow:hidden;border:1px solid color-mix(in srgb,var(--line) 88%,transparent);border-radius:18px;background:color-mix(in srgb,var(--panel) 96%,var(--bg));box-shadow:0 18px 56px #0008;opacity:0;visibility:hidden;transform:translate3d(-10px,0,0);pointer-events:none;transition:opacity calc(.18s/var(--animation-speed)) ease,transform calc(.18s/var(--animation-speed)) ease,visibility calc(.18s/var(--animation-speed)) ease}
+.blobby-sidebar-root[data-open="true"] .blobby-sidebar-backdrop{opacity:1;visibility:visible;pointer-events:auto}
+.blobby-sidebar-root[data-open="true"] .blobby-sidebar-panel{opacity:1;visibility:visible;transform:none;pointer-events:auto}
+.blobby-sidebar-root[data-open="true"] .blobby-sidebar-rail{z-index:3}
+.blobby-sidebar-panel-head{min-height:62px;display:flex;align-items:center;gap:10px;padding:10px 10px 10px 14px;border-bottom:1px solid color-mix(in srgb,var(--line) 72%,transparent)}
+.blobby-sidebar-heading{min-width:0;flex:1}.blobby-sidebar-heading h2{margin:2px 0 0;font-size:15px;letter-spacing:-.02em}.blobby-sidebar-eyebrow{display:block;color:var(--muted);font-size:9px;font-weight:800;letter-spacing:.14em;text-transform:uppercase}
+.blobby-sidebar-close{color:var(--muted)}.blobby-sidebar-close:hover{background:var(--panel2);color:var(--ink)}
+.blobby-sidebar-panel-body{min-height:0;overflow-y:auto;overscroll-behavior:contain;padding:12px;display:grid;align-content:start;gap:12px}
+.blobby-sidebar-intro{display:grid;grid-template-columns:38px minmax(0,1fr);gap:10px;align-items:start;padding:12px;border:1px solid color-mix(in srgb,var(--line) 72%,transparent);border-radius:13px;background:color-mix(in srgb,var(--panel2) 48%,transparent)}
+.blobby-sidebar-intro>.blobby-sidebar-icon{width:36px;height:36px;border-radius:11px;background:color-mix(in srgb,var(--accent) 12%,var(--panel2));color:var(--accent)}
+.blobby-sidebar-intro>.blobby-sidebar-icon svg{width:19px;height:19px}.blobby-sidebar-copy{margin:0;color:var(--muted);font-size:11px;line-height:1.55}
+.blobby-sidebar-status-grid{display:grid;gap:6px}.blobby-sidebar-status-card{min-height:48px;display:grid;grid-template-columns:30px minmax(0,1fr);align-items:center;gap:9px;width:100%;padding:7px 9px;border:1px solid transparent;border-radius:11px;background:transparent;color:var(--ink);text-align:left}.blobby-sidebar-status-card:hover{border-color:color-mix(in srgb,var(--line) 80%,transparent);background:color-mix(in srgb,var(--panel2) 50%,transparent)}.blobby-sidebar-status-card>.blobby-sidebar-icon{color:var(--accent);width:30px;height:30px;border-radius:9px;background:color-mix(in srgb,var(--accent) 9%,transparent)}.blobby-sidebar-status-card span:not(.blobby-sidebar-icon){display:grid;gap:1px}.blobby-sidebar-status-card strong{font-size:11px}.blobby-sidebar-status-card small{font-size:9px;color:var(--muted)}
+.blobby-sidebar-note{margin:0;padding:10px 11px;border-left:2px solid color-mix(in srgb,var(--accent) 65%,transparent);background:color-mix(in srgb,var(--accent) 5%,transparent);color:var(--muted);font-size:10px;line-height:1.55;border-radius:0 9px 9px 0}
+
+/* In App Inventor browser mode, the full-height rail cannot remain above the
+   website WebViewer without intercepting touches. Use one compact launcher in
+   the existing browser chrome; opening it expands WebViewer_UI deliberately. */
+.blobby-sidebar-browser-button{color:var(--accent)!important}
+html[data-app-mode="true"][data-browser-active="true"] .address-form{grid-template-columns:auto minmax(80px,1fr) repeat(4,auto)!important}
+html[data-app-mode="true"][data-browser-active="true"] #sidebarBrowserButton{display:grid!important}
+
+html[data-performance="true"] .blobby-sidebar-rail,html[data-performance="true"] .blobby-sidebar-panel{backdrop-filter:none!important;-webkit-backdrop-filter:none!important;box-shadow:none!important}
+html[data-performance="true"] .blobby-sidebar-root *,html[data-reduced="true"] .blobby-sidebar-root *,html[data-animations="false"] .blobby-sidebar-root *{transition:none!important;animation:none!important}
+
+@media(max-width:700px){
+ html[data-app-mode="true"][data-browser-active="true"] .address-form{grid-template-columns:auto minmax(64px,1fr) repeat(3,auto)!important}
+ .blobby-sidebar-panel{left:59px;width:calc(100vw - 67px);top:6px;bottom:6px;border-radius:15px}
+ .blobby-sidebar-rail{left:6px;width:44px;padding-left:4px;padding-right:4px}
+ .blobby-sidebar-brand,.blobby-sidebar-button{width:34px;height:34px;min-height:34px}
+}
+@media(max-width:460px){
+ html[data-app-mode="true"][data-browser-active="true"] .address-form{grid-template-columns:auto minmax(52px,1fr) repeat(2,auto)!important}
+ .blobby-sidebar-panel{left:54px;width:calc(100vw - 60px)}
+ .blobby-sidebar-rail{left:4px;width:42px}
+}
+@media(prefers-reduced-motion:reduce){.blobby-sidebar-root *{animation:none!important;transition:none!important}}
