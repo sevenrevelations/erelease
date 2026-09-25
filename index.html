@@ -8,6 +8,7 @@
   <title>blobby.vip</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='18' fill='%238da2ff'/%3E%3Ctext x='17' y='47' font-size='48' font-family='Arial' font-weight='700' fill='%23080a12'%3Eb%3C/text%3E%3C/svg%3E">
   <link rel="stylesheet" href="./style.css">
+  <link rel="stylesheet" href="./sidebar.css">
   <link rel="stylesheet" href="./license.css">
   <link rel="stylesheet" href="./chat.css">
   <script src="./core.js"></script>
@@ -17,6 +18,7 @@
   <script src="./cursor.js"></script>
   <script src="./layout.js"></script>
   <script src="./config.js"></script>
+  <script src="./sidebar.js" defer></script>
   <script src="./license.js" defer></script>
   <script src="./chat.js" defer></script>
 </head>
@@ -73,6 +75,7 @@
         <button id="bookmarkPageButton" class="nav-button browser-only-control" type="button" aria-label="Bookmark this page" title="Bookmark this page">☆</button>
         <button class="go-button" type="submit" aria-label="Go">Go</button>
         <button id="externalButton" class="nav-button external-button" type="button" aria-label="Open externally" title="Open externally">↗</button>
+        <button id="sidebarBrowserButton" class="nav-button browser-only-control blobby-sidebar-browser-button" type="button" aria-label="Open Blobby sidebar" title="Blobby sidebar">◫</button>
         <button id="browserMenuButton" class="nav-button browser-only-control" type="button" aria-label="Browser menu" title="Browser menu">⋮</button>
       </form>
       <div id="browserMenu" class="browser-menu" hidden>
