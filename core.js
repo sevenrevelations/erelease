@@ -29,7 +29,7 @@ const defaultLayoutGrid={
  preview:{col:5,row:12,w:12,h:2}
 };
 const layoutPresets={
- minimal:{name:'Minimal',grid:{topbar:{col:16,row:1,w:5,h:1},hero:{col:6,row:3,w:10,h:2},clock:{col:17,row:3,w:3,h:2},addressbar:{col:5,row:6,w:12,h:1},shortcuts:{col:5,row:8,w:12,h:3},recent:{col:5,row:11,w:12,h:2},preview:{col:5,row:13,w:12,h:2}},hidden:['clock','recent','preview']},
+ minimal:{name:'Minimal',grid:{topbar:{col:16,row:1,w:5,h:1},hero:{col:2,row:2,w:19,h:4},clock:{col:17,row:3,w:3,h:2},addressbar:{col:5,row:6,w:12,h:1},shortcuts:{col:5,row:8,w:12,h:3},recent:{col:5,row:11,w:12,h:2},preview:{col:5,row:13,w:12,h:2}},hidden:['clock','recent','preview']},
  centered:{name:'Centered',grid:{topbar:{col:16,row:1,w:5,h:1},hero:{col:6,row:2,w:10,h:2},clock:{col:9,row:4,w:4,h:2},addressbar:{col:4,row:6,w:14,h:1},shortcuts:{col:5,row:8,w:12,h:3},recent:{col:6,row:11,w:10,h:2},preview:{col:5,row:13,w:12,h:2}},hidden:['preview']},
  compact:{name:'Compact',grid:{topbar:{col:16,row:1,w:5,h:1},hero:{col:2,row:2,w:7,h:1},clock:{col:17,row:2,w:3,h:1},addressbar:{col:3,row:4,w:16,h:1},shortcuts:{col:3,row:6,w:11,h:3},recent:{col:15,row:6,w:4,h:3},preview:{col:3,row:10,w:16,h:2}},hidden:['clock','preview']},
  floating:{name:'Floating',grid:{topbar:{col:16,row:1,w:5,h:1},hero:{col:2,row:2,w:7,h:2},clock:{col:17,row:3,w:3,h:2},addressbar:{col:5,row:5,w:12,h:1},shortcuts:{col:2,row:8,w:9,h:4},recent:{col:14,row:7,w:5,h:4},preview:{col:6,row:12,w:10,h:2}},hidden:[]},
