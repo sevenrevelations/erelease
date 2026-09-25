@@ -9,7 +9,7 @@
   const MAX_IMAGE_BYTES = Math.max(1, Number(CONFIG.CHAT_MAX_IMAGE_MB || 5)) * 1024 * 1024;
   const MAX_FILE_BYTES = Math.max(1, Number(CONFIG.CHAT_MAX_FILE_MB || 10)) * 1024 * 1024;
   const PAGE_SIZE = 45;
-  const ALLOWED_IMAGE_TYPES = new Set(['image/jpeg','image/png','image/webp','image/gif']);
+  const ALLOWED_IMAGE_TYPES = new Set(['image/jpeg','image/png','image/webp']);
   const ALLOWED_FILE_TYPES = new Set([
     'application/pdf','text/plain','text/csv',
     'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
@@ -21,12 +21,12 @@
   const QUICK_REACTIONS = ['👍','❤️','😂','🔥','💯','👀'];
 
   const state = {
-    open:false, peek:false, hoverOpened:false, ready:false, connecting:false, connected:false,
+    open:false, peek:false, hoverOpened:false, embedded:false, ready:false, connecting:false, connected:false,
     supabase:null, session:null, profile:null, profiles:new Map(), messages:[], reactions:new Map(),
     channel:null, onlineIds:new Set(), typing:new Map(), typingTimer:0, typingSent:false,
     replyTo:null, unread:0, lastReadAt:readJSON(READ_KEY, 0) || 0, oldestLoadedAt:null,
     loadingOlder:false, hasMore:true, signedUrls:new Map(), blocked:new Set(),
-    prefs:{ autoplayGifs:true, sounds:false, compact:false, reducedMotion:false, notifications:'mentions', ...readJSON(PREF_KEY,{}) },
+    prefs:{ sounds:false, compact:false, reducedMotion:false, notifications:'mentions', ...readJSON(PREF_KEY,{}) },
     activePopover:'', flyout:'', lastScrollNearBottom:true
   };
 
@@ -87,18 +87,16 @@
         <div class="blobby-chat-composer">
           <div class="blobby-chat-replying" hidden><span></span><button type="button" aria-label="Cancel reply">×</button></div>
           <div class="blobby-chat-input-wrap"><textarea class="blobby-chat-input" rows="1" maxlength="2000" placeholder="Message #general…" aria-label="Message general chat"></textarea><button class="blobby-chat-send" type="button" disabled>Send</button></div>
-          <div class="blobby-chat-tools"><button class="blobby-chat-tool chat-emoji" type="button" title="Emoji">😀</button><button class="blobby-chat-tool chat-gif" type="button" title="GIF">GIF</button><button class="blobby-chat-tool chat-attach" type="button" title="Attach file">📎</button><button class="blobby-chat-tool chat-photo" type="button" title="Attach photo">📷</button><span class="blobby-chat-upload-state"></span><span class="blobby-chat-upload-progress" hidden><i></i></span></div>
-          <input class="chat-file-input" type="file" hidden accept=".pdf,.txt,.csv,.docx,.xlsx,.pptx,image/jpeg,image/png,image/webp,image/gif">
-          <input class="chat-photo-input" type="file" hidden accept="image/jpeg,image/png,image/webp,image/gif">
+          <div class="blobby-chat-tools"><button class="blobby-chat-tool chat-emoji" type="button" title="Emoji">😀</button><button class="blobby-chat-tool chat-attach" type="button" title="Attach file">📎</button><button class="blobby-chat-tool chat-photo" type="button" title="Attach photo">📷</button><span class="blobby-chat-upload-state"></span><span class="blobby-chat-upload-progress" hidden><i></i></span></div>
+          <input class="chat-file-input" type="file" hidden accept=".pdf,.txt,.csv,.docx,.xlsx,.pptx,image/jpeg,image/png,image/webp">
+          <input class="chat-photo-input" type="file" hidden accept="image/jpeg,image/png,image/webp">
         </div>
         <button class="blobby-chat-jump" type="button" hidden>↓ New messages</button>
         <div class="blobby-chat-popover chat-emoji-popover" hidden><div class="blobby-chat-popover-head"><strong>Emoji</strong><button class="blobby-chat-icon-btn" type="button" data-close-popover>×</button></div><div class="blobby-chat-emoji-grid"></div></div>
-        <div class="blobby-chat-popover chat-gif-popover" hidden><div class="blobby-chat-popover-head"><strong>GIFs</strong><button class="blobby-chat-icon-btn" type="button" data-close-popover>×</button></div><input class="chat-gif-search" placeholder="Search GIFs…" autocomplete="off"><div class="blobby-chat-gif-grid"></div><div class="blobby-chat-gif-note">You can also paste a direct HTTPS GIF URL and press Enter. GIF search requires the optional chat-gif Edge Function.</div></div>
         <section class="blobby-chat-flyout chat-settings-flyout" aria-label="Chat settings"><div class="blobby-chat-flyout-head"><button class="blobby-chat-icon-btn flyout-back" type="button">←</button><strong>Chat settings</strong></div><div class="blobby-chat-flyout-body">
           <div class="blobby-chat-field"><label>Display name</label><input class="chat-display-name" maxlength="32" autocomplete="off"></div>
           <div class="blobby-chat-field"><label>Custom status</label><input class="chat-custom-status" maxlength="80" placeholder="chilling, gaming, afk…"></div>
           <div class="blobby-chat-field"><label>Presence</label><select class="chat-presence-status"><option value="online">Online</option><option value="away">Away</option><option value="dnd">Do Not Disturb</option><option value="invisible">Invisible</option></select></div>
-          <label class="blobby-chat-setting-row"><span>Autoplay GIFs</span><input class="chat-autoplay" type="checkbox"></label>
           <label class="blobby-chat-setting-row"><span>Notification sounds</span><input class="chat-sounds" type="checkbox"></label>
           <label class="blobby-chat-setting-row"><span>Compact messages</span><input class="chat-compact" type="checkbox"></label>
           <label class="blobby-chat-setting-row"><span>Reduced chat motion</span><input class="chat-reduced" type="checkbox"></label>
@@ -115,10 +113,10 @@
       root,panel:q('.blobby-chat-panel',root),edge:q('.blobby-chat-edge-zone',root),handle:q('.blobby-chat-handle',root),unread:q('.blobby-chat-unread',root),backdrop:q('.blobby-chat-backdrop',root),
       close:q('.chat-close',root),settings:q('.chat-settings',root),connection:q('.blobby-chat-connection',root),dot:q('.blobby-chat-dot',root),onlineCount:q('.blobby-chat-online-count',root),presenceButton:q('.blobby-chat-presence-btn',root),
       messages:q('.blobby-chat-messages',root),typing:q('.blobby-chat-typing',root),input:q('.blobby-chat-input',root),send:q('.blobby-chat-send',root),replying:q('.blobby-chat-replying',root),
-      emojiButton:q('.chat-emoji',root),gifButton:q('.chat-gif',root),attachButton:q('.chat-attach',root),photoButton:q('.chat-photo',root),fileInput:q('.chat-file-input',root),photoInput:q('.chat-photo-input',root),uploadState:q('.blobby-chat-upload-state',root),uploadProgress:q('.blobby-chat-upload-progress',root),
-      emojiPopover:q('.chat-emoji-popover',root),gifPopover:q('.chat-gif-popover',root),gifSearch:q('.chat-gif-search',root),gifGrid:q('.blobby-chat-gif-grid',root),
+      emojiButton:q('.chat-emoji',root),attachButton:q('.chat-attach',root),photoButton:q('.chat-photo',root),fileInput:q('.chat-file-input',root),photoInput:q('.chat-photo-input',root),uploadState:q('.blobby-chat-upload-state',root),uploadProgress:q('.blobby-chat-upload-progress',root),
+      emojiPopover:q('.chat-emoji-popover',root),
       settingsFlyout:q('.chat-settings-flyout',root),onlineFlyout:q('.chat-online-flyout',root),onlineList:q('.chat-online-list',root),jump:q('.blobby-chat-jump',root),
-      displayName:q('.chat-display-name',root),customStatus:q('.chat-custom-status',root),presenceStatus:q('.chat-presence-status',root),autoplay:q('.chat-autoplay',root),sounds:q('.chat-sounds',root),compact:q('.chat-compact',root),reduced:q('.chat-reduced',root),saveSettings:q('.chat-save-settings',root),settingsError:q('.chat-settings-error',root),
+      displayName:q('.chat-display-name',root),customStatus:q('.chat-custom-status',root),presenceStatus:q('.chat-presence-status',root),sounds:q('.chat-sounds',root),compact:q('.chat-compact',root),reduced:q('.chat-reduced',root),saveSettings:q('.chat-save-settings',root),settingsError:q('.chat-settings-error',root),
       toasts:q('.blobby-chat-toast-stack',root),lightbox:q('.blobby-chat-lightbox',root),lightboxImg:q('.blobby-chat-lightbox img',root)
     };
 
@@ -142,7 +140,7 @@
     ui.settings.onclick=()=>openFlyout('settings'); ui.presenceButton.onclick=()=>openFlyout('online');
     ui.root.querySelectorAll('.flyout-back').forEach(b=>b.onclick=closeFlyouts);
     ui.root.querySelectorAll('[data-close-popover]').forEach(b=>b.onclick=closePopovers);
-    ui.emojiButton.onclick=()=>togglePopover('emoji'); ui.gifButton.onclick=()=>togglePopover('gif');
+    ui.emojiButton.onclick=()=>togglePopover('emoji');
     ui.attachButton.onclick=()=>ui.fileInput.click(); ui.photoButton.onclick=()=>ui.photoInput.click();
     ui.fileInput.onchange=()=>{const f=ui.fileInput.files?.[0]; ui.fileInput.value=''; if(f)uploadAndSend(f,false);};
     ui.photoInput.onchange=()=>{const f=ui.photoInput.files?.[0]; ui.photoInput.value=''; if(f)uploadAndSend(f,true);};
@@ -152,8 +150,6 @@
     ui.replying.querySelector('button').onclick=()=>setReply(null);
     ui.jump.onclick=()=>{scrollBottom(true);ui.jump.hidden=true;};
     ui.messages.addEventListener('scroll',onMessagesScroll,{passive:true});
-    ui.gifSearch.addEventListener('keydown',e=>{ if(e.key==='Enter'){e.preventDefault();const v=ui.gifSearch.value.trim(); if(isHttpsUrl(v)&&/\.(gif|webp)(\?|$)/i.test(v))sendGif(v); else searchGifs(v);} });
-    ui.gifSearch.addEventListener('input',debounce(()=>{const v=ui.gifSearch.value.trim(); if(v.length>=2&&!isHttpsUrl(v))searchGifs(v);},450));
     ui.saveSettings.onclick=saveChatSettings;
     ui.lightbox.onclick=e=>{ if(e.target===ui.lightbox||e.target.tagName==='BUTTON')ui.lightbox.hidden=true; };
     document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&state.open){ if(state.flyout){closeFlyouts();return;} if(state.activePopover){closePopovers();return;} closeChat(); } });
@@ -169,21 +165,39 @@
   }
 
   function appExpand(){
+    if(state.embedded)return;
     try{ if(window.BlobbyAppUI?.expand) window.BlobbyAppUI.expand('chat'); else if(window.BlobbyBridge?.isAppInventor?.()){window.BlobbyBridge.send('EXPAND_UI','chat');setTimeout(()=>window.BlobbyBridge.send('UI_HEIGHT','-2'),20);} }catch{}
   }
   function appRestore(){
+    if(state.embedded)return;
     try{ if(window.BlobbyAppUI?.restore) window.BlobbyAppUI.restore(); else if(window.BlobbyBridge?.isAppInventor?.()) window.BlobbyBridge.send('RESTORE_UI','browser'); }catch{}
   }
 
   async function openChat(){
     if(document.body.dataset.licenseState!=='unlocked') return;
+    if(window.BlobbyPanels && !state.embedded){window.BlobbyPanels.open('chat');return;}
     state.open=true; state.peek=false; ui.panel.setAttribute('aria-hidden','false'); syncRootFlags(); appExpand();
     await ensureConnected();
     markRead();
     setTimeout(()=>ui.input.focus(),isReduced()?0:220);
   }
   function closeChat(){
-    if(!state.open)return; state.open=false; state.peek=false; state.hoverOpened=false; closePopovers(); closeFlyouts(); ui.panel.setAttribute('aria-hidden','true'); syncRootFlags(); markRead(); appRestore();
+    if(!state.open)return;
+    if(state.embedded&&window.BlobbyPanels?.isOpen?.('chat')){window.BlobbyPanels.close('chat');return;}
+    state.open=false; state.peek=false; state.hoverOpened=false; closePopovers(); closeFlyouts(); ui.panel.setAttribute('aria-hidden','true'); syncRootFlags(); markRead(); appRestore();
+  }
+  function sidebarOpen(host){
+    if(!host||!ui?.panel)return;
+    state.embedded=true;state.open=true;state.peek=false;state.hoverOpened=false;
+    ui.root.dataset.embedded='true';ui.panel.classList.add('blobby-chat-panel--embedded');
+    host.append(ui.panel);ui.panel.setAttribute('aria-hidden','false');syncRootFlags();
+    ensureConnected().then(()=>{markRead();setTimeout(()=>ui.input?.focus(),isReduced()?0:120);});
+  }
+  function sidebarClose(){
+    if(!ui?.panel)return;
+    state.open=false;state.peek=false;state.hoverOpened=false;closePopovers();closeFlyouts();markRead();
+    ui.panel.setAttribute('aria-hidden','true');ui.panel.classList.remove('blobby-chat-panel--embedded');
+    ui.root.append(ui.panel);state.embedded=false;delete ui.root.dataset.embedded;syncRootFlags();
   }
   function toggleChat(){ state.open?closeChat():openChat(); }
 
@@ -393,8 +407,7 @@
   function gifNode(url){
     const wrap=el('div','blobby-chat-media');
     const load=()=>{const img=el('img');img.alt='Shared GIF';img.loading='lazy';img.referrerPolicy='no-referrer';img.src=url;wrap.replaceChildren(img);};
-    if(state.prefs.autoplayGifs&&!isPerformance())load();
-    else{const b=el('button','blobby-chat-file','▶ Load GIF');b.type='button';b.style.width='100%';b.style.border='0';b.style.color='var(--ink)';b.onclick=load;wrap.append(b);}
+    {const b=el('button','blobby-chat-file','▶ Load legacy GIF');b.type='button';b.style.width='100%';b.style.border='0';b.style.color='var(--ink)';b.onclick=load;wrap.append(b);}
     return wrap;
   }
   function attachmentNode(m){
@@ -423,7 +436,6 @@
     try{await insertMessage({body,message_type:'text',reply_to:state.replyTo?.id||null});ui.input.value='';autoGrowInput();setReply(null);sendTypingStop();}
     catch(e){toast(friendlyDbError(e));}finally{syncSend();}
   }
-  async function sendGif(url){if(!isHttpsUrl(url))return toast('Use a valid HTTPS GIF URL.');try{await insertMessage({message_type:'gif',gif_url:url,reply_to:state.replyTo?.id||null});ui.gifSearch.value='';closePopovers();setReply(null);}catch(e){toast(friendlyDbError(e));}}
   async function insertMessage(payload){
     if(!state.profile)throw Error('Chat profile unavailable.'); const row={room_id:GENERAL_ROOM_ID,sender_profile_id:currentProfileId(),body:payload.body||null,message_type:payload.message_type||'text',gif_url:payload.gif_url||null,attachment_path:payload.attachment_path||null,attachment_name:payload.attachment_name||null,attachment_mime:payload.attachment_mime||null,attachment_size:payload.attachment_size||null,reply_to:payload.reply_to||null};
     const {error}=await state.supabase.from('chat_messages').insert(row); if(error)throw error;
@@ -439,19 +451,14 @@
   async function moderateProfile(p,action){if(!isMod())return;if(action==='mute'){const mins=Number(prompt(`Timeout ${p.display_name} for how many minutes?`,'30'));if(!Number.isFinite(mins)||mins<1)return;const {error}=await state.supabase.rpc('chat_moderate_profile',{p_target_profile_id:p.id,p_action:'mute',p_minutes:Math.min(mins,10080)});toast(error?'Moderation action failed.':`${p.display_name} timed out.`);}else if(action==='ban'){if(!confirm(`Ban ${p.display_name} from chat?`))return;const {error}=await state.supabase.rpc('chat_moderate_profile',{p_target_profile_id:p.id,p_action:'ban',p_minutes:null});toast(error?'Moderation action failed.':`${p.display_name} banned.`);}}
 
   function insertEmoji(emoji){const i=ui.input,s=i.selectionStart??i.value.length,e=i.selectionEnd??i.value.length;i.value=i.value.slice(0,s)+emoji+i.value.slice(e);i.focus();i.setSelectionRange(s+emoji.length,s+emoji.length);syncSend();closePopovers();}
-  function togglePopover(name){const target=name==='emoji'?ui.emojiPopover:ui.gifPopover;if(state.activePopover===name){closePopovers();return;}closePopovers();state.activePopover=name;target.hidden=false;if(name==='gif')setTimeout(()=>ui.gifSearch.focus(),20);}
-  function closePopovers(){state.activePopover='';ui.emojiPopover.hidden=true;ui.gifPopover.hidden=true;}
+  function togglePopover(name){const target=ui.emojiPopover;if(state.activePopover===name){closePopovers();return;}closePopovers();state.activePopover=name;target.hidden=false;}
+  function closePopovers(){state.activePopover='';ui.emojiPopover.hidden=true;}
 
-  async function searchGifs(query){
-    if(!query)return;ui.gifGrid.replaceChildren(el('div','blobby-chat-loading','Searching…'));
-    try{const {data:{session}}=await state.supabase.auth.getSession();const res=await fetch(String(CONFIG.SUPABASE_URL).replace(/\/$/,'')+'/functions/v1/chat-gif',{method:'POST',headers:{'Content-Type':'application/json','apikey':CONFIG.SUPABASE_PUBLISHABLE_KEY,'Authorization':'Bearer '+session.access_token},body:JSON.stringify({q:query,limit:isPerformance()?8:14})});const body=await res.json();if(!res.ok||!body.ok)throw Error(body.code||'gif_search_unavailable');ui.gifGrid.replaceChildren();(body.results||[]).forEach(g=>{const b=el('button','blobby-chat-gif');b.type='button';const img=el('img');img.loading='lazy';img.alt=g.description||'GIF';img.src=g.preview||g.url;b.append(img);b.onclick=()=>sendGif(g.url);ui.gifGrid.append(b);});if(!(body.results||[]).length)ui.gifGrid.append(el('div','blobby-chat-empty','No GIFs found.'));}
-    catch{ui.gifGrid.replaceChildren(el('div','blobby-chat-empty','GIF search is not configured yet. Paste a direct HTTPS GIF URL above instead.'));}
-  }
 
   async function uploadAndSend(file,photoOnly){
     if(!state.ready)return toast('Chat is still connecting.');
     const isImage=ALLOWED_IMAGE_TYPES.has(file.type);const ext=extOf(file.name);
-    if(photoOnly&&!isImage)return toast('Choose a JPG, PNG, WEBP, or GIF image.');
+    if(photoOnly&&!isImage)return toast('Choose a JPG, PNG, or WEBP image.');
     if(isImage&&file.size>MAX_IMAGE_BYTES)return toast(`Images must be ${CONFIG.CHAT_MAX_IMAGE_MB||5} MB or smaller.`);
     if(!isImage&&(!ALLOWED_FILE_TYPES.has(file.type)||!ALLOWED_FILE_EXT.has(ext)))return toast('That file type is not allowed.');
     if(!isImage&&file.size>MAX_FILE_BYTES)return toast(`Files must be ${CONFIG.CHAT_MAX_FILE_MB||10} MB or smaller.`);
@@ -466,14 +473,14 @@
 
   function openFlyout(which){closePopovers();state.flyout=which;ui.settingsFlyout.dataset.open=String(which==='settings');ui.onlineFlyout.dataset.open=String(which==='online');if(which==='settings')fillSettings();if(which==='online')renderOnline();}
   function closeFlyouts(){state.flyout='';ui.settingsFlyout.dataset.open='false';ui.onlineFlyout.dataset.open='false';}
-  function fillSettings(){if(!state.profile||!ui.displayName)return;ui.displayName.value=state.profile.display_name||'';ui.customStatus.value=state.profile.custom_status||'';ui.presenceStatus.value=state.profile.status||'online';ui.autoplay.checked=!!state.prefs.autoplayGifs;ui.sounds.checked=!!state.prefs.sounds;ui.compact.checked=!!state.prefs.compact;ui.reduced.checked=!!state.prefs.reducedMotion;}
+  function fillSettings(){if(!state.profile||!ui.displayName)return;ui.displayName.value=state.profile.display_name||'';ui.customStatus.value=state.profile.custom_status||'';ui.presenceStatus.value=state.profile.status||'online';ui.sounds.checked=!!state.prefs.sounds;ui.compact.checked=!!state.prefs.compact;ui.reduced.checked=!!state.prefs.reducedMotion;}
   async function saveChatSettings(){
     ui.settingsError.textContent='';const displayName=safeName(ui.displayName.value),customStatus=safeText(ui.customStatus.value,80).trim(),status=ui.presenceStatus.value;
     if(displayName.length<2){ui.settingsError.textContent='Display name must be at least 2 characters.';return;}
     const {data,error}=await state.supabase.rpc('chat_update_profile',{p_display_name:displayName,p_custom_status:customStatus||null,p_status:status});
     if(error){ui.settingsError.textContent=/cooldown/i.test(error.message)?'You can change your display name once every 10 minutes.':error.message||'Could not save profile.';return;}
     if(data)state.profile={...state.profile,...data};state.profiles.set(state.profile.id,state.profile);
-    state.prefs.autoplayGifs=ui.autoplay.checked;state.prefs.sounds=ui.sounds.checked;state.prefs.compact=ui.compact.checked;state.prefs.reducedMotion=ui.reduced.checked;writeJSON(PREF_KEY,state.prefs);syncRootFlags();renderMessages({preserveScroll:true});
+    state.prefs.sounds=ui.sounds.checked;state.prefs.compact=ui.compact.checked;state.prefs.reducedMotion=ui.reduced.checked;writeJSON(PREF_KEY,state.prefs);syncRootFlags();renderMessages({preserveScroll:true});
     if(state.channel){if(state.profile.status==='invisible')await state.channel.untrack();else await state.channel.track({profile_id:currentProfileId(),at:Date.now()});}
     toast('Chat settings saved.');closeFlyouts();
   }
@@ -500,5 +507,5 @@
   function boot(){createUI();if(document.body.dataset.licenseState==='unlocked')setConnection('offline','Open chat to connect');window.addEventListener('blobby:license-unlocked',()=>setConnection('offline','Open chat to connect'));}
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
 
-  window.BlobbyChat=Object.freeze({open:openChat,close:closeChat,toggle:toggleChat,state:()=>({open:state.open,ready:state.ready,online:state.onlineIds.size,profile:state.profile?{displayName:state.profile.display_name,role:state.profile.role}:null})});
+  window.BlobbyChat=Object.freeze({open:openChat,close:closeChat,toggle:toggleChat,sidebarOpen,sidebarClose,state:()=>({open:state.open,ready:state.ready,online:state.onlineIds.size,profile:state.profile?{displayName:state.profile.display_name,role:state.profile.role}:null})});
 })();
