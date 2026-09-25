@@ -2,7 +2,7 @@
 (() => {
 const C=BlobbyCore,T=BlobbyThemes,B=BlobbyBridge,L=BlobbyLayout,$=id=>document.getElementById(id),root=document.documentElement,shell=$('appShell');
 function read(key,fallback){try{const v=localStorage.getItem(key);return v===null?fallback:JSON.parse(v);}catch{return fallback;}}
-let state=C.migrate(read),p=state.prefs,storageOK=true,editingShortcut=-1,editingBookmarkId=null,importMode='theme',activeSettings='appearance',layoutSnapshot=null,pendingGrid=null,layoutUndo=[],layoutRedo=[],selectedLayoutId=null,clockTimer=0,saveTimer=0,lastUIHeight=null,browserOwnerTabId=null,tabDragId=null,bookmarkRenderKey='',uiExpanded=false,baseUIMode='home',overlayUIMode='',overlayReturnMode='home';
+let state=C.migrate(read),p=state.prefs,storageOK=true,editingShortcut=-1,editingBookmarkId=null,importMode='theme',activeSettings='appearance',layoutSnapshot=null,pendingGrid=null,layoutUndo=[],layoutRedo=[],selectedLayoutId=null,clockTimer=0,saveTimer=0,lastUIHeight=null,browserOwnerTabId=null,tabDragId=null,bookmarkRenderKey='',uiExpanded=false,baseUIMode='home',overlayUIMode='',overlayReturnMode='home',activeManagedPanel='';
 state.tabs=C.sanitizeTabs(state.tabs);state.bookmarks=C.sanitizeBookmarks(state.bookmarks);if(!state.tabs.some(t=>t.id===state.activeTab))state.activeTab=state.tabs[0].id;if(!p.restorePreviousTabs){state.tabs=[C.createTab()];state.activeTab=state.tabs[0].id;}
 const effects=new BlobbyEffects.EffectsEngine($('effectsCanvas'));
 const cursor=new BlobbyCursor.CursorEngine($('customCursor'));
@@ -21,16 +21,27 @@ function currentTab(){let t=state.tabs.find(x=>x.id===state.activeTab);if(!t){t=
 function currentTheme(){return T.getTheme(p.theme,state.customThemes);}
 function appMode(){return B.isAppInventor();}
 const BASE_UI_MODES=new Set(['home','browser']);
-const OVERLAY_UI_MODES=new Set(['settings','layout','command','modal','menu','chat']);
-function applyUIMode(){const visual=overlayUIMode||baseUIMode;root.dataset.uiMode=visual;root.dataset.baseUiMode=baseUIMode;root.dataset.browserActive=String(baseUIMode==='browser');root.dataset.tabsVisible='true';shell.dataset.uiMode=visual;}
+const OVERLAY_UI_MODES=new Set(['settings','layout','command','modal','menu','chat','sidebar']);
+function applyUIMode(){const visual=overlayUIMode||baseUIMode;root.dataset.uiMode=visual;root.dataset.baseUiMode=baseUIMode;root.dataset.browserActive=String(baseUIMode==='browser');root.dataset.tabsVisible='true';shell.dataset.uiMode=visual;window.dispatchEvent(new CustomEvent('blobby:ui-mode',{detail:{visual,base:baseUIMode,expanded:uiExpanded,panel:activeManagedPanel}}));}
 function setBaseUIMode(mode){if(!BASE_UI_MODES.has(mode))return;baseUIMode=mode;if(!overlayUIMode)applyUIMode();}
 function expandUI(reason='modal'){if(!uiExpanded)overlayReturnMode=baseUIMode;uiExpanded=true;overlayUIMode=OVERLAY_UI_MODES.has(reason)?reason:'modal';applyUIMode();B.send('EXPAND_UI',reason);lastUIHeight=-2;setTimeout(()=>B.send('UI_HEIGHT','-2'),20);}
 function restoreUI(){uiExpanded=false;overlayUIMode='';baseUIMode=BASE_UI_MODES.has(overlayReturnMode)?overlayReturnMode:baseUIMode;applyUIMode();B.send('RESTORE_UI',baseUIMode);scheduleUIHeight(80);}
+function announcePanel(id,open){window.dispatchEvent(new CustomEvent('blobby:panel-change',{detail:{id,open,base:baseUIMode}}));}
+function openManagedPanel(id){id=String(id||'').trim();if(!id)return;if(activeManagedPanel===id&&overlayUIMode==='sidebar')return;const previous=activeManagedPanel;if(previous&&previous!==id)announcePanel(previous,false);activeManagedPanel=id;root.dataset.panelOpen='true';root.dataset.activePanel=id;if(!uiExpanded)expandUI('sidebar');else{overlayUIMode='sidebar';applyUIMode();lastUIHeight=-2;if(appMode())setTimeout(()=>B.send('UI_HEIGHT','-2'),20);}announcePanel(id,true);}
+function closeManagedPanel(id=''){if(!activeManagedPanel)return;if(id&&id!==activeManagedPanel)return;const previous=activeManagedPanel;activeManagedPanel='';delete root.dataset.activePanel;root.dataset.panelOpen='false';announcePanel(previous,false);if(overlayUIMode==='sidebar')restoreUI();}
+function toggleManagedPanel(id){if(activeManagedPanel===id&&overlayUIMode==='sidebar')closeManagedPanel(id);else openManagedPanel(id);}
+window.BlobbyPanels=Object.freeze({open:openManagedPanel,close:closeManagedPanel,toggle:toggleManagedPanel,active:()=>activeManagedPanel,isOpen:id=>!!activeManagedPanel&&(!id||activeManagedPanel===id)});
 window.BlobbyAppUI=Object.freeze({
  expand:(reason='chat')=>expandUI(reason),
  restore:()=>restoreUI(),
+ openPanel:openManagedPanel,
+ closePanel:closeManagedPanel,
+ togglePanel:toggleManagedPanel,
+ activePanel:()=>activeManagedPanel,
  isExpanded:()=>uiExpanded,
  baseMode:()=>baseUIMode,
+ goHome:()=>{closeManagedPanel();goHome();},
+ openSettings:(id)=>{closeManagedPanel();openSettings(id);},
  performance:()=>!!p.performance,
  reducedMotion:()=>!!p.reducedMotion
 });
