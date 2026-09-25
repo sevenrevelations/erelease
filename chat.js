@@ -21,7 +21,7 @@
   const QUICK_REACTIONS = ['👍','❤️','😂','🔥','💯','👀'];
 
   const state = {
-    open:false, peek:false, hoverOpened:false, embedded:false, ready:false, connecting:false, connected:false,
+    open:false, peek:false, hoverOpened:false, ready:false, connecting:false, connected:false,
     supabase:null, session:null, profile:null, profiles:new Map(), messages:[], reactions:new Map(),
     channel:null, onlineIds:new Set(), typing:new Map(), typingTimer:0, typingSent:false,
     replyTo:null, unread:0, lastReadAt:readJSON(READ_KEY, 0) || 0, oldestLoadedAt:null,
@@ -165,39 +165,21 @@
   }
 
   function appExpand(){
-    if(state.embedded)return;
     try{ if(window.BlobbyAppUI?.expand) window.BlobbyAppUI.expand('chat'); else if(window.BlobbyBridge?.isAppInventor?.()){window.BlobbyBridge.send('EXPAND_UI','chat');setTimeout(()=>window.BlobbyBridge.send('UI_HEIGHT','-2'),20);} }catch{}
   }
   function appRestore(){
-    if(state.embedded)return;
     try{ if(window.BlobbyAppUI?.restore) window.BlobbyAppUI.restore(); else if(window.BlobbyBridge?.isAppInventor?.()) window.BlobbyBridge.send('RESTORE_UI','browser'); }catch{}
   }
 
   async function openChat(){
     if(document.body.dataset.licenseState!=='unlocked') return;
-    if(window.BlobbyPanels && !state.embedded){window.BlobbyPanels.open('chat');return;}
     state.open=true; state.peek=false; ui.panel.setAttribute('aria-hidden','false'); syncRootFlags(); appExpand();
     await ensureConnected();
     markRead();
     setTimeout(()=>ui.input.focus(),isReduced()?0:220);
   }
   function closeChat(){
-    if(!state.open)return;
-    if(state.embedded&&window.BlobbyPanels?.isOpen?.('chat')){window.BlobbyPanels.close('chat');return;}
-    state.open=false; state.peek=false; state.hoverOpened=false; closePopovers(); closeFlyouts(); ui.panel.setAttribute('aria-hidden','true'); syncRootFlags(); markRead(); appRestore();
-  }
-  function sidebarOpen(host){
-    if(!host||!ui?.panel)return;
-    state.embedded=true;state.open=true;state.peek=false;state.hoverOpened=false;
-    ui.root.dataset.embedded='true';ui.panel.classList.add('blobby-chat-panel--embedded');
-    host.append(ui.panel);ui.panel.setAttribute('aria-hidden','false');syncRootFlags();
-    ensureConnected().then(()=>{markRead();setTimeout(()=>ui.input?.focus(),isReduced()?0:120);});
-  }
-  function sidebarClose(){
-    if(!ui?.panel)return;
-    state.open=false;state.peek=false;state.hoverOpened=false;closePopovers();closeFlyouts();markRead();
-    ui.panel.setAttribute('aria-hidden','true');ui.panel.classList.remove('blobby-chat-panel--embedded');
-    ui.root.append(ui.panel);state.embedded=false;delete ui.root.dataset.embedded;syncRootFlags();
+    if(!state.open)return; state.open=false; state.peek=false; state.hoverOpened=false; closePopovers(); closeFlyouts(); ui.panel.setAttribute('aria-hidden','true'); syncRootFlags(); markRead(); appRestore();
   }
   function toggleChat(){ state.open?closeChat():openChat(); }
 
@@ -507,5 +489,5 @@
   function boot(){createUI();if(document.body.dataset.licenseState==='unlocked')setConnection('offline','Open chat to connect');window.addEventListener('blobby:license-unlocked',()=>setConnection('offline','Open chat to connect'));}
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
 
-  window.BlobbyChat=Object.freeze({open:openChat,close:closeChat,toggle:toggleChat,sidebarOpen,sidebarClose,state:()=>({open:state.open,ready:state.ready,online:state.onlineIds.size,profile:state.profile?{displayName:state.profile.display_name,role:state.profile.role}:null})});
+  window.BlobbyChat=Object.freeze({open:openChat,close:closeChat,toggle:toggleChat,state:()=>({open:state.open,ready:state.ready,online:state.onlineIds.size,profile:state.profile?{displayName:state.profile.display_name,role:state.profile.role}:null})});
 })();

@@ -71,34 +71,3 @@ html[data-performance="true"] .blobby-chat-panel,html[data-performance="true"] .
   .blobby-chat-panel{width:100vw;border-left:0}.blobby-chat-root[data-open="true"] .blobby-chat-handle{display:none}.blobby-chat-backdrop{display:none}.blobby-chat-media img{max-height:230px}
 }
 @media(prefers-reduced-motion:reduce){.blobby-chat-root *{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
-
-/* Stage 2: Global Chat lives inside the centralized Blobby sidebar panel. */
-.blobby-chat-root[data-embedded="true"] .blobby-chat-edge-zone,
-.blobby-chat-root[data-embedded="true"] .blobby-chat-handle,
-.blobby-chat-root[data-embedded="true"] .blobby-chat-backdrop{display:none!important}
-.blobby-chat-panel.blobby-chat-panel--embedded{position:relative;inset:auto;right:auto;top:auto;width:100%;height:100%;min-height:0;transform:none!important;opacity:1!important;border-left:0;box-shadow:none;transition:none;will-change:auto;background:transparent}
-.blobby-chat-panel--embedded .blobby-chat-head{padding-top:10px}
-
-/* Stage 2.1: embedded chat must never grow beyond its sidebar host. */
-.blobby-sidebar-chat-host>.blobby-chat-panel--embedded{
-  position:absolute;
-  inset:0;
-  width:100%;
-  height:100%;
-  min-height:0;
-  max-height:100%;
-  box-sizing:border-box;
-  overflow:hidden;
-  display:grid;
-  grid-template-rows:auto auto minmax(0,1fr) auto auto;
-}
-.blobby-chat-panel--embedded .blobby-chat-messages{
-  min-height:0;
-  overflow-y:auto;
-  overscroll-behavior:contain;
-}
-.blobby-chat-panel--embedded .blobby-chat-typing,
-.blobby-chat-panel--embedded .blobby-chat-composer{
-  min-height:0;
-  flex-shrink:0;
-}
