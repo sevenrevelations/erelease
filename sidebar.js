@@ -29,7 +29,7 @@
     {id:'home',label:'Home',icon:'home',action:'home'},
     {separator:true},
     {id:'chat',label:'Global Chat',icon:'chat',action:'chat'},
-    {id:'dms',label:'DMs',icon:'dm',panel:'dms',soon:true},
+    {id:'dms',label:'DMs',icon:'dm',action:'dms'},
     {id:'groups',label:'Groups',icon:'groups',panel:'groups',soon:true},
     {id:'leaderboard',label:'Leaderboard',icon:'leaderboard',panel:'leaderboard',soon:true},
     {separator:true},
@@ -92,7 +92,14 @@
     }
     if(item.action==='chat'){
       window.BlobbyPanels?.close();
-      setTimeout(()=>window.BlobbyChat?.open?.(),0);
+      if(window.BlobbyDM?.state?.().open)window.BlobbyDM.close();
+      setTimeout(()=>window.BlobbyChat?.open?.(),30);
+      return;
+    }
+    if(item.action==='dms'){
+      window.BlobbyPanels?.close();
+      if(window.BlobbyChat?.state?.().open)window.BlobbyChat.close();
+      setTimeout(()=>window.BlobbyDM?.open?.(),30);
       return;
     }
     if(item.panel)window.BlobbyPanels?.toggle(item.panel);
@@ -104,9 +111,9 @@
     const intro=node('section','blobby-sidebar-intro');intro.append(icon(data.icon),node('p','blobby-sidebar-copy'));intro.querySelector('p').textContent=data.body;body.append(intro);
     if(id==='hub'){
       const grid=node('div','blobby-sidebar-status-grid');
-      const entries=[['Global Chat','Ready','chat'],['DMs','Next','dm'],['Groups','Planned','groups'],['Leaderboard','Planned','leaderboard'],['Music','Reserved','music']];
-      for(const [name,status,ic] of entries){const card=node('button','blobby-sidebar-status-card');card.type='button';card.append(icon(ic));const copy=node('span');const strong=node('strong');strong.textContent=name;const small=node('small');small.textContent=status;copy.append(strong,small);card.append(copy);if(name==='Global Chat')card.addEventListener('click',()=>activate({action:'chat'}));else card.addEventListener('click',()=>window.BlobbyPanels?.open(name==='DMs'?'dms':name.toLowerCase()));grid.append(card);}body.append(grid);
-      const note=node('p','blobby-sidebar-note');note.textContent='Stage 1 only adds the navigation shell and centralized panel manager. No new social or music backend runs yet.';body.append(note);
+      const entries=[['Global Chat','Ready','chat'],['DMs','Ready','dm'],['Groups','Planned','groups'],['Leaderboard','Planned','leaderboard'],['Music','Reserved','music']];
+      for(const [name,status,ic] of entries){const card=node('button','blobby-sidebar-status-card');card.type='button';card.append(icon(ic));const copy=node('span');const strong=node('strong');strong.textContent=name;const small=node('small');small.textContent=status;copy.append(strong,small);card.append(copy);if(name==='Global Chat')card.addEventListener('click',()=>activate({action:'chat'}));else if(name==='DMs')card.addEventListener('click',()=>activate({action:'dms'}));else card.addEventListener('click',()=>window.BlobbyPanels?.open(name.toLowerCase()));grid.append(card);}body.append(grid);
+      const note=node('p','blobby-sidebar-note');note.textContent='The sidebar is a lightweight launcher. Global Chat and DMs open in their own standalone interfaces so browsing stays stable and fast.';body.append(note);
     }else{
       const note=node('p','blobby-sidebar-note');note.textContent='This destination is intentionally lightweight for now. We will activate it in its own tested stage.';body.append(note);
     }

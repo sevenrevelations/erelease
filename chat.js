@@ -21,7 +21,7 @@
   const QUICK_REACTIONS = ['👍','❤️','😂','🔥','💯','👀'];
 
   const state = {
-    open:false, peek:false, hoverOpened:false, ready:false, connecting:false, connected:false,
+    open:false, peek:false, hoverOpened:false, ready:false, identityReady:false, connecting:false, connected:false,
     supabase:null, session:null, profile:null, profiles:new Map(), messages:[], reactions:new Map(),
     channel:null, onlineIds:new Set(), typing:new Map(), typingTimer:0, typingSent:false,
     replyTo:null, unread:0, lastReadAt:readJSON(READ_KEY, 0) || 0, oldestLoadedAt:null,
@@ -191,21 +191,29 @@
     return state.supabase;
   }
 
+  async function ensureIdentity(force=false){
+    if(state.identityReady&&!force&&state.supabase&&state.profile)return {supabase:state.supabase,session:state.session,profile:state.profile};
+    const sb=await loadSupabase();
+    let {data:{session}}=await sb.auth.getSession();
+    if(!session){
+      const {data,error}=await sb.auth.signInAnonymously();
+      if(error)throw Error('Anonymous chat sign-in is not enabled in Supabase.');
+      session=data.session;
+    }
+    state.session=session;
+    await bindLicenseToChat();
+    await Promise.all([loadProfiles(),loadBlocks()]);
+    state.identityReady=true;
+    return {supabase:state.supabase,session:state.session,profile:state.profile};
+  }
+
   async function ensureConnected(force=false){
     if(state.ready&&!force)return;
     if(state.connecting)return;
     state.connecting=true; setConnection('connecting','Connecting…');
     try{
-      const sb=await loadSupabase();
-      let {data:{session}}=await sb.auth.getSession();
-      if(!session){
-        const {data,error}=await sb.auth.signInAnonymously();
-        if(error)throw Error('Anonymous chat sign-in is not enabled in Supabase.');
-        session=data.session;
-      }
-      state.session=session;
-      await bindLicenseToChat();
-      await Promise.all([loadProfiles(),loadMessages(true),loadBlocks()]);
+      await ensureIdentity(false);
+      await loadMessages(true);
       await subscribeRealtime();
       state.ready=true; state.connected=true; setConnection('connected','Connected'); renderMessages(); renderOnline();
     }catch(err){
@@ -483,11 +491,11 @@
   function syncUnread(){if(!ui.unread)return;ui.unread.hidden=state.unread<=0;ui.unread.textContent=state.unread>99?'99+':String(state.unread);}
 
   async function disconnectChat(){
-    state.ready=false;state.connected=false;state.messages=[];state.profiles.clear();state.onlineIds.clear();if(state.channel&&state.supabase){try{await state.supabase.removeChannel(state.channel);}catch{}}state.channel=null;setConnection('offline','Access locked');if(state.open)closeChat();
+    state.ready=false;state.identityReady=false;state.connected=false;state.session=null;state.profile=null;state.messages=[];state.profiles.clear();state.onlineIds.clear();if(state.channel&&state.supabase){try{await state.supabase.removeChannel(state.channel);}catch{}}state.channel=null;setConnection('offline','Access locked');if(state.open)closeChat();
   }
 
   function boot(){createUI();if(document.body.dataset.licenseState==='unlocked')setConnection('offline','Open chat to connect');window.addEventListener('blobby:license-unlocked',()=>setConnection('offline','Open chat to connect'));}
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
 
-  window.BlobbyChat=Object.freeze({open:openChat,close:closeChat,toggle:toggleChat,state:()=>({open:state.open,ready:state.ready,online:state.onlineIds.size,profile:state.profile?{displayName:state.profile.display_name,role:state.profile.role}:null})});
+  window.BlobbyChat=Object.freeze({open:openChat,close:closeChat,toggle:toggleChat,backend:async()=>{const x=await ensureIdentity(false);return {supabase:x.supabase,session:x.session,profile:{...x.profile}};},state:()=>({open:state.open,ready:state.ready,online:state.onlineIds.size,profile:state.profile?{id:state.profile.id,displayName:state.profile.display_name,role:state.profile.role}:null})});
 })();
