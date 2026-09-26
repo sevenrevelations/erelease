@@ -125,6 +125,16 @@
   function clearActivation() {
     try { localStorage.removeItem(ACTIVATION_KEY); } catch {}
   }
+  function resetInstallationIdentity() {
+    try { localStorage.removeItem(INSTALLATION_KEY); } catch {}
+    return installationId();
+  }
+  function returnToActivationAfterReset() {
+    clearActivation();
+    resetInstallationIdentity();
+    input.value = '';
+    showGate('idle', 'Installation reset detected.', 'Enter your access key again to register this device.');
+  }
   function cachedExpired(saved) {
     if (!saved?.expiresAt) return false;
     const t = new Date(saved.expiresAt).getTime();
@@ -205,6 +215,9 @@
       const age = Date.now() - Number(saved.lastVerified || 0);
       if (!cachedExpired(saved) && age >= 0 && age <= OFFLINE_GRACE_MS) return { ok: true, mode: 'offline' };
     }
+    if (result?.code === 'installation_reset') {
+      return { ok: false, code: 'installation_reset' };
+    }
     if (!background && !['offline','server_error'].includes(result?.code)) clearActivation();
     return { ok: false, code: result?.code || result?.status || 'server_error' };
   }
@@ -230,14 +243,13 @@
       applyFailure('expired');
       return;
     }
-    const age = Date.now() - Number(saved.lastVerified || 0);
-    if (age >= 0 && age < VERIFY_INTERVAL_MS) {
-      unlock('cached');
-      return;
-    }
+    // Always verify with the license server on a fresh Blobby launch.
+    // VERIFY_INTERVAL_MS is only used for periodic re-checks while Blobby
+    // remains open; it never bypasses startup verification.
     message('validating', 'Verifying your access…', '');
     const result = await verify(saved, { allowOffline: true });
     if (result.ok) unlock(result.mode);
+    else if (result.code === 'installation_reset') returnToActivationAfterReset();
     else applyFailure(result.code);
   }
 
@@ -249,6 +261,10 @@
     visibilityCheckInFlight = true;
     const result = await verify(saved, { allowOffline: true, background: true });
     visibilityCheckInFlight = false;
+    if (!result.ok && result.code === 'installation_reset') {
+      returnToActivationAfterReset();
+      return;
+    }
     if (!result.ok && !['offline','server_error'].includes(result.code)) {
       clearActivation();
       applyFailure(result.code);

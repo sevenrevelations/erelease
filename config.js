@@ -5,7 +5,7 @@ window.BLOBBY_CONFIG = Object.freeze({
   SUPABASE_URL: "https://asyfvgtgzxdnpsowucgf.supabase.co",
   SUPABASE_PUBLISHABLE_KEY: "sb_publishable_YXnPw2zl8W8eZsz5KbFmLw_baSkoFn2",
   SUPPORT_URL: "",
-  VERIFY_INTERVAL_HOURS: 12,
+  VERIFY_INTERVAL_HOURS: 1,
   OFFLINE_GRACE_HOURS: 72,
 
   // Community chat (public frontend settings only; no secrets here)
