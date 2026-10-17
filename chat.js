@@ -189,6 +189,8 @@
     q('.chat-open-dms',root).onclick=()=>{closeChat();setTimeout(()=>window.BlobbyDM?.open?.(),40);};
     q('.chat-open-groups',root).onclick=()=>{closeChat();setTimeout(()=>window.BlobbyGroup?.open?.(),40);};
 
+    ui.panel.inert=true;
+    ui.panel.style.pointerEvents='none';
     bindUI(); syncRootFlags(); syncUnread(); observeThemeState();
   }
   function bindUI(){
@@ -246,13 +248,40 @@
 
   async function openChat(){
     if(document.body.dataset.licenseState!=='unlocked') return;
-    state.open=true; state.peek=false; ui.panel.setAttribute('aria-hidden','false'); syncRootFlags(); appExpand();
+
+    // Never stack Profile over/under Chat.
+    if(window.BlobbyProfile?.state?.().open) window.BlobbyProfile.close();
+
+    state.open=true;
+    state.peek=false;
+    ui.panel.inert=false;
+    ui.panel.style.pointerEvents='auto';
+    ui.panel.setAttribute('aria-hidden','false');
+    syncRootFlags();
+    appExpand();
+
     await ensureConnected();
     markRead();
     setTimeout(()=>ui.input.focus(),isReduced()?0:220);
   }
   function closeChat(){
-    if(!state.open)return; state.open=false; state.peek=false; state.hoverOpened=false; closePopovers(); closeFlyouts(); ui.panel.setAttribute('aria-hidden','true'); syncRootFlags(); markRead(); appRestore();
+    if(!state.open)return;
+
+    state.open=false;
+    state.peek=false;
+    state.hoverOpened=false;
+    closePopovers();
+    closeFlyouts();
+
+    // Hard-disable the closed overlay so an invisible panel can never block
+    // the Blobby homepage or Browser WebViewer.
+    ui.panel.setAttribute('aria-hidden','true');
+    ui.panel.inert=true;
+    ui.panel.style.pointerEvents='none';
+
+    syncRootFlags();
+    markRead();
+    appRestore();
   }
   function toggleChat(){ state.open?closeChat():openChat(); }
 

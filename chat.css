@@ -158,3 +158,81 @@ html[data-performance="true"] .blobby-chat-panel,html[data-performance="true"] .
   .blobby-chat-root[data-open="true"] .blobby-chat-handle{display:none}
   .blobby-chat-roombar span{display:none}
 }
+
+
+/* Stage 12.1 hotfix ---------------------------------------------------------
+   - closed Chat must NEVER intercept clicks
+   - backdrop is dark only while Chat is open
+   - desktop Chat is a centered app window instead of filling the viewport
+---------------------------------------------------------------------------- */
+.blobby-chat-backdrop{
+  background:transparent!important;
+  pointer-events:none!important;
+}
+.blobby-chat-root[data-open="true"] .blobby-chat-backdrop{
+  background:#020604b8!important;
+  pointer-events:auto!important;
+}
+
+.blobby-chat-panel{
+  left:50%!important;
+  right:auto!important;
+  top:50%!important;
+  bottom:auto!important;
+  inset:auto!important;
+
+  width:min(1160px,calc(100vw - 72px))!important;
+  height:min(760px,calc(100dvh - 72px))!important;
+
+  transform:translate(-50%,-50%) scale(.985)!important;
+  opacity:0!important;
+  visibility:hidden!important;
+  pointer-events:none!important;
+}
+
+.blobby-chat-root[data-open="true"] .blobby-chat-panel{
+  transform:translate(-50%,-50%) scale(1)!important;
+  opacity:1!important;
+  visibility:visible!important;
+  pointer-events:auto!important;
+}
+
+/* When chat is closed, no child may create an invisible click target. */
+.blobby-chat-root:not([data-open="true"]) .blobby-chat-panel,
+.blobby-chat-root:not([data-open="true"]) .blobby-chat-panel *{
+  pointer-events:none!important;
+}
+
+/* Slightly tighter columns for the smaller desktop window. */
+@media (min-width:1041px){
+  .blobby-chat-workspace{
+    grid-template-columns:190px minmax(0,1fr) 210px!important;
+  }
+}
+
+/* Tablet: keep it centered but hide the member rail. */
+@media (max-width:1040px) and (min-width:701px){
+  .blobby-chat-panel{
+    width:min(900px,calc(100vw - 36px))!important;
+    height:min(720px,calc(100dvh - 36px))!important;
+  }
+  .blobby-chat-workspace{
+    grid-template-columns:175px minmax(0,1fr)!important;
+  }
+}
+
+/* Phone / App Inventor narrow view: use the whole available screen. */
+@media (max-width:700px),(pointer:coarse){
+  .blobby-chat-panel{
+    left:4px!important;
+    right:4px!important;
+    top:4px!important;
+    bottom:4px!important;
+    width:auto!important;
+    height:auto!important;
+    transform:scale(.985)!important;
+  }
+  .blobby-chat-root[data-open="true"] .blobby-chat-panel{
+    transform:none!important;
+  }
+}

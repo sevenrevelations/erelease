@@ -104,18 +104,21 @@
     }
     if(item.action==='chat'){
       window.BlobbyPanels?.close();
+      if(window.BlobbyProfile?.state?.().open)window.BlobbyProfile.close();
       if(window.BlobbyDM?.state?.().open)window.BlobbyDM.close();
       setTimeout(()=>window.BlobbyChat?.open?.(),30);
       return;
     }
     if(item.action==='dms'){
       window.BlobbyPanels?.close();
+      if(window.BlobbyProfile?.state?.().open)window.BlobbyProfile.close();
       if(window.BlobbyChat?.state?.().open)window.BlobbyChat.close();
       setTimeout(()=>window.BlobbyDM?.open?.(),30);
       return;
     }
     if(item.action==='groups'){
       window.BlobbyPanels?.close();
+      if(window.BlobbyProfile?.state?.().open)window.BlobbyProfile.close();
       if(window.BlobbyChat?.state?.().open)window.BlobbyChat.close();
       if(window.BlobbyDM?.state?.().open)window.BlobbyDM.close();
       if(window.BlobbyLeaderboard?.state?.().open)window.BlobbyLeaderboard.close();
@@ -124,6 +127,7 @@
     }
     if(item.action==='music'){
       window.BlobbyPanels?.close();
+      if(window.BlobbyProfile?.state?.().open)window.BlobbyProfile.close();
       if(window.BlobbyChat?.state?.().open)window.BlobbyChat.close();
       if(window.BlobbyDM?.state?.().open)window.BlobbyDM.close();
       if(window.BlobbyGroup?.state?.().open)window.BlobbyGroup.close();
@@ -133,6 +137,7 @@
     }
     if(item.action==='leaderboard'){
       window.BlobbyPanels?.close();
+      if(window.BlobbyProfile?.state?.().open)window.BlobbyProfile.close();
       if(window.BlobbyChat?.state?.().open)window.BlobbyChat.close();
       if(window.BlobbyDM?.state?.().open)window.BlobbyDM.close();
       if(window.BlobbyGroup?.state?.().open)window.BlobbyGroup.close();
