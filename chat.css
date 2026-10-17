@@ -71,3 +71,90 @@ html[data-performance="true"] .blobby-chat-panel,html[data-performance="true"] .
   .blobby-chat-panel{width:100vw;border-left:0}.blobby-chat-root[data-open="true"] .blobby-chat-handle{display:none}.blobby-chat-backdrop{display:none}.blobby-chat-media img{max-height:230px}
 }
 @media(prefers-reduced-motion:reduce){.blobby-chat-root *{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
+
+
+/* Stage 12 — Fern/Discord-inspired full community layout ------------------ */
+.blobby-chat-root[data-open="true"] .blobby-chat-handle{display:none}
+.blobby-chat-backdrop{background:#020604b8!important}
+.blobby-chat-panel{
+  inset:clamp(5px,1vw,12px)!important;
+  right:auto!important;top:auto!important;
+  width:auto!important;height:auto!important;
+  border:1px solid color-mix(in srgb,var(--line) 80%,transparent)!important;
+  border-radius:18px!important;
+  background:color-mix(in srgb,var(--panel) 98%,var(--bg))!important;
+  box-shadow:0 28px 100px #0009!important;
+  transform:translateY(12px) scale(.992)!important;
+  opacity:0!important;
+  display:block!important;
+}
+.blobby-chat-root[data-open="true"] .blobby-chat-panel{transform:none!important;opacity:1!important}
+.blobby-chat-workspace{height:100%;min-height:0;display:grid;grid-template-columns:210px minmax(0,1fr) 230px;overflow:hidden}
+.blobby-chat-channels{min-height:0;display:flex;flex-direction:column;background:#06110d;border-right:1px solid color-mix(in srgb,var(--line) 66%,transparent);padding:13px 10px}
+.blobby-chat-community-title{display:flex;align-items:baseline;gap:6px;padding:4px 7px 14px;border-bottom:1px solid color-mix(in srgb,var(--line) 48%,transparent)}
+.blobby-chat-community-title strong{font-size:16px}.blobby-chat-community-title span{font-size:10px;color:var(--muted)}
+.blobby-chat-channel-group{display:grid;gap:3px;margin-top:15px}
+.blobby-chat-channel-group>small{font-size:9px;letter-spacing:.13em;color:#6f8278;padding:0 7px 5px}
+.blobby-chat-channel{display:grid;grid-template-columns:22px minmax(0,1fr) auto;align-items:center;gap:6px;width:100%;height:34px;padding:0 8px;border:0;border-radius:9px;background:transparent;color:#9eb0a7;text-align:left;font:inherit;cursor:pointer}
+.blobby-chat-channel b{font-size:13px;color:#73887d;text-align:center}.blobby-chat-channel span{font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.blobby-chat-channel em{font-style:normal;font-size:8px;color:#607369}
+.blobby-chat-channel:hover,.blobby-chat-channel.active{background:color-mix(in srgb,var(--accent) 8%,transparent);color:#fff}
+.blobby-chat-channel.active b{color:var(--accent)}.blobby-chat-channel:disabled{opacity:.42;cursor:default}
+.blobby-chat-channel-spacer{flex:1}
+.blobby-chat-self{display:grid;grid-template-columns:34px minmax(0,1fr);gap:8px;align-items:center;width:100%;padding:8px;border:0;border-radius:11px;background:color-mix(in srgb,var(--panel2) 55%,transparent);color:var(--ink);font:inherit;text-align:left;cursor:pointer}
+.blobby-chat-self:hover{background:color-mix(in srgb,var(--accent) 8%,var(--panel2))}
+.blobby-chat-self-avatar{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;background:#10231b center/cover no-repeat;color:var(--accent);font-size:11px;font-weight:900}
+.blobby-chat-self-copy{min-width:0}.blobby-chat-self-copy strong,.blobby-chat-self-copy small{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.blobby-chat-self-copy strong{font-size:11px}.blobby-chat-self-copy small{font-size:9px;color:var(--muted);margin-top:2px}
+.blobby-chat-core{min-width:0;min-height:0;display:grid;grid-template-rows:auto auto minmax(0,1fr) auto auto;background:#07130e}
+.blobby-chat-head{height:52px;padding:0 14px!important;background:#07130e}
+.blobby-chat-title-copy strong{font-size:13px!important}.blobby-chat-hash{color:#7c9186}.blobby-chat-title-copy span{font-size:9px!important}
+.blobby-chat-head-actions{gap:5px}.blobby-chat-presence-btn{padding:6px 8px!important}
+.blobby-chat-roombar{min-height:34px;padding:6px 14px!important;background:#06110d!important;color:var(--muted);font-size:9px}
+.blobby-chat-room-description{color:#a7b8af}
+.blobby-chat-messages{padding:14px 14px 10px!important}
+.blobby-chat-msg{grid-template-columns:38px minmax(0,1fr)!important;gap:9px!important;padding:7px 8px!important;border-radius:9px!important}
+.blobby-chat-msg:hover{background:#ffffff06!important}
+.blobby-chat-avatar{width:38px!important;height:38px!important;border-radius:50%!important;border:0!important;cursor:pointer}
+.blobby-chat-name{border:0;background:transparent;padding:0;font:inherit;font-size:12px!important;font-weight:900!important;cursor:pointer;max-width:none!important}
+.blobby-chat-msg-head{gap:6px!important;align-items:center!important}
+.blobby-chat-owner-badge,.blobby-chat-mod-badge{display:inline-flex;padding:2px 5px;border-radius:5px;font-size:8px!important;line-height:1.25;letter-spacing:.04em}
+.blobby-chat-owner-badge{color:#07110d!important;background:#bdfbd7;text-shadow:none!important}
+.blobby-chat-mod-badge{color:#07110d!important;background:#ffb657}
+.blobby-chat-time{margin-left:0!important;font-size:9px!important}
+.blobby-chat-body{font-size:12px!important;line-height:1.45!important}
+.blobby-chat-reactions{gap:5px!important}.blobby-chat-reaction{font-size:10px!important;padding:3px 7px!important}
+.blobby-chat-msg-actions{position:absolute;right:7px;top:3px;margin:0!important;padding:3px;border:1px solid color-mix(in srgb,var(--line) 60%,transparent);border-radius:8px;background:#07120e}
+.blobby-chat-mini-btn{font-size:9px!important}
+.blobby-chat-day{font-size:8px!important;margin:15px 4px!important}
+.blobby-chat-typing{min-height:20px!important;padding:3px 16px!important;font-size:9px!important}
+.blobby-chat-composer{padding:10px 14px 13px!important;background:#06110d!important}
+.blobby-chat-input-wrap{border-radius:14px!important;padding:7px 8px!important;background:#0b1b15!important}
+.blobby-chat-input{font-size:12px!important;min-height:35px!important}
+.blobby-chat-send{height:34px!important}
+.blobby-chat-tools{padding-top:6px!important}
+.blobby-chat-members{min-height:0;background:#06110d;border-left:1px solid color-mix(in srgb,var(--line) 66%,transparent);display:grid;grid-template-rows:auto minmax(0,1fr)}
+.blobby-chat-members-head{height:52px;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:0 12px;border-bottom:1px solid color-mix(in srgb,var(--line) 55%,transparent)}
+.blobby-chat-members-head strong{font-size:12px}.blobby-chat-members-head span{font-size:9px;color:var(--muted)}
+.blobby-chat-members-list{overflow:auto;padding:8px 7px 16px}
+.blobby-chat-member-group{padding:10px 6px 5px;color:#71867a;font-size:8px;font-weight:800;letter-spacing:.08em}
+.blobby-chat-online-user{width:100%;grid-template-columns:30px minmax(0,1fr)!important;gap:7px!important;border:0;background:transparent;color:var(--ink);font:inherit;text-align:left;cursor:pointer}
+.blobby-chat-online-user[data-online="false"]{opacity:.56}
+.blobby-chat-online-user .blobby-chat-avatar{width:30px!important;height:30px!important}
+.blobby-chat-online-copy strong{display:flex!important;align-items:center;gap:4px}.blobby-chat-online-copy .blobby-chat-name{font-size:10px!important}.blobby-chat-online-copy span{font-size:8px!important}
+.blobby-chat-popover{right:250px!important}
+.blobby-chat-flyout{width:min(390px,92vw)!important;border:1px solid var(--line);border-radius:15px 0 0 15px;top:8px!important;bottom:8px!important;right:8px!important;inset:auto 8px 8px auto!important}
+.blobby-chat-jump{right:250px!important}
+.blobby-chat-toast-stack{right:250px!important}
+@media(max-width:1040px){
+  .blobby-chat-workspace{grid-template-columns:190px minmax(0,1fr)}
+  .blobby-chat-members{display:none}
+  .blobby-chat-popover,.blobby-chat-jump,.blobby-chat-toast-stack{right:14px!important}
+}
+@media(max-width:700px),(pointer:coarse){
+  .blobby-chat-panel{inset:4px!important;width:auto!important}
+  .blobby-chat-workspace{grid-template-columns:1fr}
+  .blobby-chat-channels{display:none}
+  .blobby-chat-members{display:none}
+  .blobby-chat-handle{display:flex}
+  .blobby-chat-root[data-open="true"] .blobby-chat-handle{display:none}
+  .blobby-chat-roombar span{display:none}
+}

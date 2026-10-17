@@ -2,6 +2,7 @@
 (() => {
   const ICONS={
     home:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 10.7 12 3.8l8.5 6.9v8.1a1.7 1.7 0 0 1-1.7 1.7h-4.5v-6.2H9.7v6.2H5.2a1.7 1.7 0 0 1-1.7-1.7z"/></svg>',
+    profile:'<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.5"/><path d="M5.5 20v-1.2c0-3.5 2.9-6.3 6.5-6.3s6.5 2.8 6.5 6.3V20"/></svg>',
     chat:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4.2 4.5h15.6a1.7 1.7 0 0 1 1.7 1.7v9.4a1.7 1.7 0 0 1-1.7 1.7H9l-5.6 3v-4.5a1.7 1.7 0 0 1-.9-1.5V6.2a1.7 1.7 0 0 1 1.7-1.7Z"/></svg>',
     dm:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5a8.5 8.5 0 1 1-5.1 15.3L3 20l1.3-3.7A8.5 8.5 0 0 1 12 3.5Z"/><path d="M8 12h8M8 8.5h5.5"/></svg>',
     groups:'<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8.3" r="3"/><circle cx="17" cy="9.5" r="2.4"/><path d="M3.5 19.5v-1.2c0-3 2.5-5.4 5.5-5.4s5.5 2.4 5.5 5.4v1.2M14.3 14.2c.8-.6 1.8-.9 2.8-.9 2.3 0 4.2 1.8 4.2 4.1v1"/></svg>',
@@ -28,6 +29,7 @@
   const ITEMS=[
     {id:'home',label:'Home',icon:'home',action:'home'},
     {separator:true},
+    {id:'profile',label:'Profile',icon:'profile',action:'profile'},
     {id:'chat',label:'Global Chat',icon:'chat',action:'chat'},
     {id:'dms',label:'DMs',icon:'dm',action:'dms'},
     {id:'groups',label:'Groups',icon:'groups',action:'groups'},
@@ -90,6 +92,16 @@
       setTimeout(()=>window.BlobbyAppUI?.openSettings?.(),0);
       return;
     }
+    if(item.action==='profile'){
+      window.BlobbyPanels?.close();
+      if(window.BlobbyChat?.state?.().open)window.BlobbyChat.close();
+      if(window.BlobbyDM?.state?.().open)window.BlobbyDM.close();
+      if(window.BlobbyGroup?.state?.().open)window.BlobbyGroup.close();
+      if(window.BlobbyLeaderboard?.state?.().open)window.BlobbyLeaderboard.close();
+      if(window.BlobbyMusic?.state?.().open)window.BlobbyMusic.close();
+      setTimeout(()=>window.BlobbyProfile?.open?.(),30);
+      return;
+    }
     if(item.action==='chat'){
       window.BlobbyPanels?.close();
       if(window.BlobbyDM?.state?.().open)window.BlobbyDM.close();
@@ -136,9 +148,9 @@
     const intro=node('section','blobby-sidebar-intro');intro.append(icon(data.icon),node('p','blobby-sidebar-copy'));intro.querySelector('p').textContent=data.body;body.append(intro);
     if(id==='hub'){
       const grid=node('div','blobby-sidebar-status-grid');
-      const entries=[['Global Chat','Ready','chat'],['DMs','Ready','dm'],['Groups','Ready','groups'],['Leaderboard','Ready','leaderboard'],['Music','Ready','music']];
-      for(const [name,status,ic] of entries){const card=node('button','blobby-sidebar-status-card');card.type='button';card.append(icon(ic));const copy=node('span');const strong=node('strong');strong.textContent=name;const small=node('small');small.textContent=status;copy.append(strong,small);card.append(copy);if(name==='Global Chat')card.addEventListener('click',()=>activate({action:'chat'}));else if(name==='DMs')card.addEventListener('click',()=>activate({action:'dms'}));else if(name==='Groups')card.addEventListener('click',()=>activate({action:'groups'}));else if(name==='Leaderboard')card.addEventListener('click',()=>activate({action:'leaderboard'}));else if(name==='Music')card.addEventListener('click',()=>activate({action:'music'}));else card.addEventListener('click',()=>window.BlobbyPanels?.open(name.toLowerCase()));grid.append(card);}body.append(grid);
-      const note=node('p','blobby-sidebar-note');note.textContent='The sidebar is a lightweight launcher. Global Chat, DMs, Groups, Leaderboard, and Music open in their own standalone interfaces so browsing stays stable and fast.';body.append(note);
+      const entries=[['Profile','Ready','profile'],['Global Chat','Ready','chat'],['DMs','Ready','dm'],['Groups','Ready','groups'],['Leaderboard','Ready','leaderboard'],['Music','Ready','music']];
+      for(const [name,status,ic] of entries){const card=node('button','blobby-sidebar-status-card');card.type='button';card.append(icon(ic));const copy=node('span');const strong=node('strong');strong.textContent=name;const small=node('small');small.textContent=status;copy.append(strong,small);card.append(copy);if(name==='Profile')card.addEventListener('click',()=>activate({action:'profile'}));else if(name==='Global Chat')card.addEventListener('click',()=>activate({action:'chat'}));else if(name==='DMs')card.addEventListener('click',()=>activate({action:'dms'}));else if(name==='Groups')card.addEventListener('click',()=>activate({action:'groups'}));else if(name==='Leaderboard')card.addEventListener('click',()=>activate({action:'leaderboard'}));else if(name==='Music')card.addEventListener('click',()=>activate({action:'music'}));else card.addEventListener('click',()=>window.BlobbyPanels?.open(name.toLowerCase()));grid.append(card);}body.append(grid);
+      const note=node('p','blobby-sidebar-note');note.textContent='The sidebar is a lightweight launcher. Profile, Chat, DMs, Groups, Leaderboard, and Music open in their own standalone interfaces so browsing stays stable and fast.';body.append(note);
     }else{
       const note=node('p','blobby-sidebar-note');note.textContent='This destination is intentionally lightweight for now. We will activate it in its own tested stage.';body.append(note);
     }

@@ -19,13 +19,14 @@
   const ALLOWED_FILE_EXT = new Set(['pdf','txt','csv','docx','xlsx','pptx']);
   const EMOJIS = ['😀','😄','😂','🥹','😍','😎','🤯','😭','😤','🤔','🫡','👀','👍','👎','❤️','🔥','💯','🎉','✨','💀','🙏','👏','🤝','🫶','⚽','🎮','📚','🚀','✅','❌','🍿','🧠'];
   const QUICK_REACTIONS = ['👍','❤️','😂','🔥','💯','👀'];
+  const PROFILE_FIELDS = 'id,display_name,avatar_path,banner_path,banner_color,bio,pronouns,status,custom_status,role,is_banned,muted_until,created_at,profile_gradient_top,profile_gradient_bottom,name_style';
 
   const state = {
     open:false, peek:false, hoverOpened:false, ready:false, identityReady:false, connecting:false, connected:false,
     supabase:null, session:null, profile:null, profiles:new Map(), messages:[], reactions:new Map(),
     channel:null, onlineIds:new Set(), typing:new Map(), typingTimer:0, typingSent:false,
     replyTo:null, unread:0, lastReadAt:readJSON(READ_KEY, 0) || 0, oldestLoadedAt:null,
-    loadingOlder:false, hasMore:true, signedUrls:new Map(), blocked:new Set(),
+    loadingOlder:false, hasMore:true, signedUrls:new Map(), avatarUrls:new Map(), blocked:new Set(),
     prefs:{ sounds:false, compact:false, reducedMotion:false, notifications:'mentions', ...readJSON(PREF_KEY,{}) },
     activePopover:'', flyout:'', lastScrollNearBottom:true
   };
@@ -76,23 +77,79 @@
         <span class="blobby-chat-handle-icon">💬</span><span class="blobby-chat-handle-label">Chat</span><span class="blobby-chat-unread" hidden>0</span>
       </button>
       <div class="blobby-chat-backdrop" aria-hidden="true"></div>
+
       <aside class="blobby-chat-panel" aria-label="Blobby Chat" aria-hidden="true">
-        <header class="blobby-chat-head">
-          <div class="blobby-chat-title"><div class="blobby-chat-logo">b</div><div class="blobby-chat-title-copy"><strong>BLOBBY CHAT</strong><span class="blobby-chat-connection">Not connected</span></div></div>
-          <div class="blobby-chat-head-actions"><button class="blobby-chat-icon-btn chat-settings" type="button" aria-label="Chat settings" title="Chat settings">⚙</button><button class="blobby-chat-icon-btn chat-close" type="button" aria-label="Close chat" title="Close chat">×</button></div>
-        </header>
-        <div class="blobby-chat-roombar"><div class="blobby-chat-room">general</div><button class="blobby-chat-presence-btn" type="button"><i class="blobby-chat-dot" data-state="offline"></i><span class="blobby-chat-online-count">0 online</span></button></div>
-        <div class="blobby-chat-messages" role="log" aria-live="polite" aria-relevant="additions"><div class="blobby-chat-loading">Open chat to connect…</div></div>
-        <div class="blobby-chat-typing" aria-live="polite"></div>
-        <div class="blobby-chat-composer">
-          <div class="blobby-chat-replying" hidden><span></span><button type="button" aria-label="Cancel reply">×</button></div>
-          <div class="blobby-chat-input-wrap"><textarea class="blobby-chat-input" rows="1" maxlength="2000" placeholder="Message #general…" aria-label="Message general chat"></textarea><button class="blobby-chat-send" type="button" disabled>Send</button></div>
-          <div class="blobby-chat-tools"><button class="blobby-chat-tool chat-emoji" type="button" title="Emoji">😀</button><button class="blobby-chat-tool chat-attach" type="button" title="Attach file">📎</button><button class="blobby-chat-tool chat-photo" type="button" title="Attach photo">📷</button><span class="blobby-chat-upload-state"></span><span class="blobby-chat-upload-progress" hidden><i></i></span></div>
-          <input class="chat-file-input" type="file" hidden accept=".pdf,.txt,.csv,.docx,.xlsx,.pptx,image/jpeg,image/png,image/webp">
-          <input class="chat-photo-input" type="file" hidden accept="image/jpeg,image/png,image/webp">
+        <div class="blobby-chat-workspace">
+          <aside class="blobby-chat-channels">
+            <div class="blobby-chat-community-title"><strong>Blobby</strong><span>Community</span></div>
+
+            <div class="blobby-chat-channel-group">
+              <small>CHANNELS</small>
+              <button class="blobby-chat-channel active" type="button"><b>#</b><span>general</span></button>
+              <button class="blobby-chat-channel" type="button" disabled><b>📣</b><span>announcements</span><em>Soon</em></button>
+              <button class="blobby-chat-channel" type="button" disabled><b>🎵</b><span>share-music</span><em>Soon</em></button>
+            </div>
+
+            <div class="blobby-chat-channel-group">
+              <small>SOCIAL</small>
+              <button class="blobby-chat-channel chat-open-dms" type="button"><b>○</b><span>Direct messages</span></button>
+              <button class="blobby-chat-channel chat-open-groups" type="button"><b>◎</b><span>Groups</span></button>
+              <button class="blobby-chat-channel chat-open-profile" type="button"><b>◇</b><span>My profile</span></button>
+            </div>
+
+            <div class="blobby-chat-channel-spacer"></div>
+
+            <button class="blobby-chat-self chat-open-profile" type="button">
+              <span class="blobby-chat-self-avatar">?</span>
+              <span class="blobby-chat-self-copy"><strong>Blobby user</strong><small>Connecting…</small></span>
+            </button>
+          </aside>
+
+          <main class="blobby-chat-core">
+            <header class="blobby-chat-head">
+              <div class="blobby-chat-title">
+                <div class="blobby-chat-title-copy">
+                  <strong><span class="blobby-chat-hash">#</span> general</strong>
+                  <span class="blobby-chat-connection">Not connected</span>
+                </div>
+              </div>
+              <div class="blobby-chat-head-actions">
+                <button class="blobby-chat-presence-btn" type="button"><i class="blobby-chat-dot" data-state="offline"></i><span class="blobby-chat-online-count">0 online</span></button>
+                <button class="blobby-chat-icon-btn chat-settings" type="button" aria-label="Chat settings" title="Chat settings">⚙</button>
+                <button class="blobby-chat-icon-btn chat-close" type="button" aria-label="Close chat" title="Close chat">×</button>
+              </div>
+            </header>
+
+            <div class="blobby-chat-roombar">
+              <div class="blobby-chat-room-description">The main Blobby community room</div>
+              <span>Be respectful • no spam</span>
+            </div>
+
+            <div class="blobby-chat-messages" role="log" aria-live="polite" aria-relevant="additions"><div class="blobby-chat-loading">Open chat to connect…</div></div>
+            <div class="blobby-chat-typing" aria-live="polite"></div>
+
+            <div class="blobby-chat-composer">
+              <div class="blobby-chat-replying" hidden><span></span><button type="button" aria-label="Cancel reply">×</button></div>
+              <div class="blobby-chat-input-wrap"><textarea class="blobby-chat-input" rows="1" maxlength="2000" placeholder="Message #general…" aria-label="Message general chat"></textarea><button class="blobby-chat-send" type="button" disabled>Send</button></div>
+              <div class="blobby-chat-tools"><button class="blobby-chat-tool chat-emoji" type="button" title="Emoji">😀</button><button class="blobby-chat-tool chat-attach" type="button" title="Attach file">📎</button><button class="blobby-chat-tool chat-photo" type="button" title="Attach photo">📷</button><span class="blobby-chat-upload-state"></span><span class="blobby-chat-upload-progress" hidden><i></i></span></div>
+              <input class="chat-file-input" type="file" hidden accept=".pdf,.txt,.csv,.docx,.xlsx,.pptx,image/jpeg,image/png,image/webp">
+              <input class="chat-photo-input" type="file" hidden accept="image/jpeg,image/png,image/webp">
+            </div>
+
+            <button class="blobby-chat-jump" type="button" hidden>↓ New messages</button>
+          </main>
+
+          <aside class="blobby-chat-members">
+            <div class="blobby-chat-members-head">
+              <strong>Members</strong>
+              <span class="blobby-chat-members-count"></span>
+            </div>
+            <div class="blobby-chat-members-list"></div>
+          </aside>
         </div>
-        <button class="blobby-chat-jump" type="button" hidden>↓ New messages</button>
+
         <div class="blobby-chat-popover chat-emoji-popover" hidden><div class="blobby-chat-popover-head"><strong>Emoji</strong><button class="blobby-chat-icon-btn" type="button" data-close-popover>×</button></div><div class="blobby-chat-emoji-grid"></div></div>
+
         <section class="blobby-chat-flyout chat-settings-flyout" aria-label="Chat settings"><div class="blobby-chat-flyout-head"><button class="blobby-chat-icon-btn flyout-back" type="button">←</button><strong>Chat settings</strong></div><div class="blobby-chat-flyout-body">
           <div class="blobby-chat-field"><label>Display name</label><input class="chat-display-name" maxlength="32" autocomplete="off"></div>
           <div class="blobby-chat-field"><label>Custom status</label><input class="chat-custom-status" maxlength="80" placeholder="chilling, gaming, afk…"></div>
@@ -102,9 +159,12 @@
           <label class="blobby-chat-setting-row"><span>Reduced chat motion</span><input class="chat-reduced" type="checkbox"></label>
           <button class="blobby-chat-save chat-save-settings" type="button">Save changes</button><div class="blobby-chat-error chat-settings-error"></div>
         </div></section>
+
         <section class="blobby-chat-flyout chat-online-flyout" aria-label="Online users"><div class="blobby-chat-flyout-head"><button class="blobby-chat-icon-btn flyout-back" type="button">←</button><strong>Online now</strong></div><div class="blobby-chat-flyout-body chat-online-list"></div></section>
+
         <div class="blobby-chat-toast-stack"></div>
       </aside>
+
       <div class="blobby-chat-lightbox" hidden><button type="button" aria-label="Close image">×</button><img alt="Shared image preview"></div>
     `;
     document.body.append(root);
@@ -116,15 +176,21 @@
       emojiButton:q('.chat-emoji',root),attachButton:q('.chat-attach',root),photoButton:q('.chat-photo',root),fileInput:q('.chat-file-input',root),photoInput:q('.chat-photo-input',root),uploadState:q('.blobby-chat-upload-state',root),uploadProgress:q('.blobby-chat-upload-progress',root),
       emojiPopover:q('.chat-emoji-popover',root),
       settingsFlyout:q('.chat-settings-flyout',root),onlineFlyout:q('.chat-online-flyout',root),onlineList:q('.chat-online-list',root),jump:q('.blobby-chat-jump',root),
+      memberList:q('.blobby-chat-members-list',root),memberCount:q('.blobby-chat-members-count',root),
+      selfAvatar:q('.blobby-chat-self-avatar',root),selfName:q('.blobby-chat-self-copy strong',root),selfStatus:q('.blobby-chat-self-copy small',root),
       displayName:q('.chat-display-name',root),customStatus:q('.chat-custom-status',root),presenceStatus:q('.chat-presence-status',root),sounds:q('.chat-sounds',root),compact:q('.chat-compact',root),reduced:q('.chat-reduced',root),saveSettings:q('.chat-save-settings',root),settingsError:q('.chat-settings-error',root),
       toasts:q('.blobby-chat-toast-stack',root),lightbox:q('.blobby-chat-lightbox',root),lightboxImg:q('.blobby-chat-lightbox img',root)
     };
 
     const emojiGrid=q('.blobby-chat-emoji-grid',root);
     EMOJIS.forEach(e=>{ const b=el('button','',e); b.type='button'; b.onclick=()=>insertEmoji(e); emojiGrid.append(b); });
+
+    root.querySelectorAll('.chat-open-profile').forEach(b=>b.onclick=()=>window.BlobbyProfile?.open?.());
+    q('.chat-open-dms',root).onclick=()=>{closeChat();setTimeout(()=>window.BlobbyDM?.open?.(),40);};
+    q('.chat-open-groups',root).onclick=()=>{closeChat();setTimeout(()=>window.BlobbyGroup?.open?.(),40);};
+
     bindUI(); syncRootFlags(); syncUnread(); observeThemeState();
   }
-
   function bindUI(){
     let peekTimer=0, closePeekTimer=0, hoverOpenTimer=0, hoverCloseTimer=0;
     const finePointer=()=>matchMedia('(hover:hover) and (pointer:fine)').matches;
@@ -157,6 +223,13 @@
     window.addEventListener('offline',()=>setConnection('offline','Offline'));
     document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible'&&state.open)ensureConnected(); });
     window.addEventListener('blobby:license-locked',disconnectChat);
+    window.addEventListener('blobby:profile-updated',async()=>{
+      if(!state.supabase||!state.profile)return;
+      try{
+        const {data}=await state.supabase.from('chat_profiles').select(PROFILE_FIELDS).eq('id',state.profile.id).maybeSingle();
+        if(data){state.profile={...state.profile,...data};state.profiles.set(data.id,data);renderMessages({preserveScroll:true});renderOnline();fillSettings();}
+      }catch{}
+    });
   }
 
   function observeThemeState(){
@@ -230,11 +303,11 @@
     const res=await fetch(String(CONFIG.SUPABASE_URL).replace(/\/$/,'')+'/functions/v1/chat-public',{method:'POST',headers:{'Content-Type':'application/json','apikey':CONFIG.SUPABASE_PUBLISHABLE_KEY,'Authorization':'Bearer '+session.access_token},body:JSON.stringify({action:'bind',activationToken:creds.token,installationId:creds.installationId})});
     let body={}; try{body=await res.json();}catch{}
     if(!res.ok||!body.ok)throw Error(body.code==='chat_banned'?'Your chat access is banned.':body.code==='license_invalid'?'Your blobby.vip access could not be verified for chat.':body.message||body.code||'Chat authorization failed.');
-    state.profile=body.profile; state.profiles.set(body.profile.id,body.profile); fillSettings();
+    state.profile=body.profile; state.profiles.set(body.profile.id,body.profile); fillSettings(); renderSelfCard();
   }
 
   async function loadProfiles(){
-    const {data,error}=await state.supabase.from('chat_profiles').select('id,display_name,avatar_path,bio,status,custom_status,role,is_banned,muted_until,created_at').limit(1000);
+    const {data,error}=await state.supabase.from('chat_profiles').select(PROFILE_FIELDS).limit(1000);
     if(error)throw error;
     (data||[]).forEach(p=>state.profiles.set(p.id,p));
     if(state.profile&&state.profiles.has(state.profile.id))state.profile={...state.profile,...state.profiles.get(state.profile.id)};
@@ -258,7 +331,7 @@
   async function loadProfilesForMessages(items){
     const ids=[...new Set((items||[]).map(m=>m.sender_profile_id).filter(id=>id&&!state.profiles.has(id)))];
     if(!ids.length)return;
-    const {data}=await state.supabase.from('chat_profiles').select('id,display_name,avatar_path,bio,status,custom_status,role,is_banned,muted_until,created_at').in('id',ids);
+    const {data}=await state.supabase.from('chat_profiles').select(PROFILE_FIELDS).in('id',ids);
     (data||[]).forEach(p=>state.profiles.set(p.id,p));
   }
 
@@ -333,10 +406,76 @@
   function renderOnline(){
     const visible=[...state.onlineIds].map(id=>state.profiles.get(id)).filter(Boolean).filter(p=>p.status!=='invisible').sort((a,b)=>roleRank(b.role)-roleRank(a.role)||a.display_name.localeCompare(b.display_name));
     ui.onlineCount.textContent=`${visible.length} online`;
-    if(!ui.onlineList)return; ui.onlineList.replaceChildren();
-    if(!visible.length){ui.onlineList.append(el('div','blobby-chat-empty','Nobody else is showing as online.'));return;}
-    for(const p of visible){const row=el('div','blobby-chat-online-user');row.append(avatarNode(p));const copy=el('div','blobby-chat-online-copy');const strong=el('strong');appendIdentity(strong,p);copy.append(strong,el('span','',p.custom_status||statusLabel(p.status)));row.append(copy);ui.onlineList.append(row);}
+
+    if(ui.onlineList){
+      ui.onlineList.replaceChildren();
+      if(!visible.length)ui.onlineList.append(el('div','blobby-chat-empty','Nobody else is showing as online.'));
+      else for(const p of visible)ui.onlineList.append(memberRow(p,true));
+    }
+
+    renderMemberSidebar(visible);
+    renderSelfCard();
   }
+
+  function renderMemberSidebar(visible){
+    if(!ui.memberList)return;
+    ui.memberList.replaceChildren();
+
+    const onlineSet=new Set(visible.map(p=>p.id));
+    const all=[...state.profiles.values()]
+      .filter(p=>p.status!=='invisible'||p.id===currentProfileId())
+      .sort((a,b)=>roleRank(b.role)-roleRank(a.role)||Number(onlineSet.has(b.id))-Number(onlineSet.has(a.id))||a.display_name.localeCompare(b.display_name))
+      .slice(0,120);
+
+    ui.memberCount.textContent=`${visible.length} online`;
+
+    const groups=[
+      ['OWNER / ADMIN',all.filter(p=>['owner','admin'].includes(p.role))],
+      ['MODERATOR',all.filter(p=>p.role==='moderator')],
+      ['ONLINE',all.filter(p=>p.role==='user'&&onlineSet.has(p.id))],
+      ['OFFLINE',all.filter(p=>p.role==='user'&&!onlineSet.has(p.id))]
+    ];
+
+    for(const [label,rows] of groups){
+      if(!rows.length)continue;
+      const head=el('div','blobby-chat-member-group',`${label} — ${rows.length}`);
+      ui.memberList.append(head);
+      for(const p of rows)ui.memberList.append(memberRow(p,onlineSet.has(p.id)));
+    }
+  }
+
+  function memberRow(p,online){
+    const row=el('button','blobby-chat-online-user');
+    row.type='button';
+    row.dataset.online=String(!!online);
+    row.onclick=()=>window.BlobbyProfile?.open?.(p.id);
+    row.append(avatarNode(p));
+
+    const copy=el('div','blobby-chat-online-copy');
+    const strong=el('strong');
+    appendIdentity(strong,p);
+    copy.append(strong,el('span','',p.custom_status||(online?statusLabel(p.status):'Offline')));
+    row.append(copy);
+    return row;
+  }
+
+  function renderSelfCard(){
+    if(!state.profile||!ui.selfName)return;
+    ui.selfName.textContent=state.profile.display_name||'Blobby user';
+    applyProfileNameStyle(ui.selfName,state.profile);
+    ui.selfStatus.textContent=state.profile.custom_status||statusLabel(state.profile.status);
+    ui.selfAvatar.textContent=initials(state.profile.display_name);
+    ui.selfAvatar.style.backgroundImage='';
+
+    if(state.profile.avatar_path){
+      avatarUrl(state.profile.avatar_path).then(url=>{
+        if(!url||!ui.selfAvatar?.isConnected)return;
+        ui.selfAvatar.textContent='';
+        ui.selfAvatar.style.backgroundImage=`url("${url.replace(/"/g,'\\"')}")`;
+      });
+    }
+  }
+
   function roleRank(role){return role==='owner'?4:role==='admin'?3:role==='moderator'?2:1;}
   function statusLabel(s){return s==='away'?'Away':s==='dnd'?'Do Not Disturb':'Online';}
 
@@ -380,14 +519,72 @@
     row.append(main);return row;
   }
 
-  function avatarNode(p){
-    const a=el('div','blobby-chat-avatar');a.textContent=initials(p?.display_name);return a;
+  async function avatarUrl(path){
+    if(!path)return'';
+    const cached=state.avatarUrls.get(path);
+    if(cached&&cached.until>Date.now())return cached.url;
+    try{
+      const {data,error}=await state.supabase.storage.from('chat-avatars').createSignedUrl(path,3600);
+      if(error||!data?.signedUrl)return'';
+      state.avatarUrls.set(path,{url:data.signedUrl,until:Date.now()+3300000});
+      return data.signedUrl;
+    }catch{return'';}
   }
+
+  function avatarNode(p){
+    const a=el('button','blobby-chat-avatar');
+    a.type='button';
+    a.textContent=initials(p?.display_name);
+    a.title=p?.display_name||'Profile';
+    a.onclick=e=>{e.stopPropagation();window.BlobbyProfile?.open?.(p?.id);};
+
+    if(p?.avatar_path){
+      avatarUrl(p.avatar_path).then(url=>{
+        if(!url||!a.isConnected)return;
+        a.textContent='';
+        const img=new Image();
+        img.alt='';
+        img.src=url;
+        a.append(img);
+      });
+    }
+    return a;
+  }
+
+  function applyProfileNameStyle(node,p){
+    if(!node)return;
+    const s=(p&&typeof p.name_style==='object'&&p.name_style)||{};
+    const color=/^#[0-9a-f]{6}$/i.test(s.color||'')?s.color:'#bdfbd7';
+    const color2=/^#[0-9a-f]{6}$/i.test(s.color2||'')?s.color2:'#ff4b93';
+    const angle=Number.isFinite(+s.angle)?Math.max(0,Math.min(360,+s.angle)):90;
+
+    node.style.removeProperty('background');
+    node.style.removeProperty('-webkit-background-clip');
+    node.style.removeProperty('background-clip');
+    node.style.removeProperty('-webkit-text-fill-color');
+    node.style.removeProperty('color');
+
+    if(s.mode==='gradient'){
+      node.style.background=`linear-gradient(${angle}deg,${color},${color2})`;
+      node.style.webkitBackgroundClip='text';
+      node.style.backgroundClip='text';
+      node.style.webkitTextFillColor='transparent';
+      node.style.color='transparent';
+    }else{
+      node.style.color=color;
+    }
+  }
+
   function appendIdentity(parent,p){
-    if(isOwnerProfile(p))parent.append(el('span','blobby-chat-owner-badge','[¥]'));
-    else if(p?.role==='admin')parent.append(el('span','blobby-chat-mod-badge','[ADMIN]'));
-    else if(p?.role==='moderator')parent.append(el('span','blobby-chat-mod-badge','[MOD]'));
-    parent.append(el('span','blobby-chat-name',p?.display_name||'Unknown'));
+    if(isOwnerProfile(p))parent.append(el('span','blobby-chat-owner-badge','OWNER'));
+    else if(p?.role==='admin')parent.append(el('span','blobby-chat-mod-badge','ADMIN'));
+    else if(p?.role==='moderator')parent.append(el('span','blobby-chat-mod-badge','MOD'));
+
+    const name=el('button','blobby-chat-name',p?.display_name||'Unknown');
+    name.type='button';
+    applyProfileNameStyle(name,p);
+    name.onclick=e=>{e.stopPropagation();window.BlobbyProfile?.open?.(p?.id);};
+    parent.append(name);
   }
   function previewMessage(m){if(m.deleted_at)return 'Message deleted';if(m.body)return m.body.replace(/\s+/g,' ').slice(0,90);if(m.message_type==='gif')return '[GIF]';if(m.message_type==='image')return '[Photo]';if(m.message_type==='file')return `[File: ${m.attachment_name||'attachment'}]`;return 'Message';}
   function bodyNode(text){
