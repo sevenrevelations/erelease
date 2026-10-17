@@ -19,6 +19,7 @@
     ready: false,
     currentKind: null,
     currentTrack: null,
+    playbackTrack: null,
     soundcloudResolved: null,
     localFiles: []
   };
@@ -29,11 +30,6 @@
   let ytPlayer = null;
   let ytApiPromise = null;
   let ytReady = false;
-  let scWidget = null;
-  let scApiPromise = null;
-  let scWidgetReady = false;
-  let scWidgetDuration = 0;
-  let scWidgetPosition = 0;
   let progressTimer = 0;
   let searchAbort = null;
 
@@ -353,14 +349,6 @@
               <div class="bm-youtube-surface" hidden>
                 <div id="blobbyMusicYoutubePlayer"></div>
               </div>
-              <div class="bm-soundcloud-surface" hidden>
-                <iframe id="blobbyMusicSoundCloudPlayer"
-                  title="SoundCloud player"
-                  width="100%" height="166"
-                  scrolling="no" frameborder="no"
-                  allow="autoplay">
-                </iframe>
-              </div>
               <label class="bm-volume">
                 <span>🔊</span>
                 <input type="range" min="0" max="100" value="80">
@@ -423,7 +411,6 @@
       duration: root.querySelector('.bm-duration'),
       volume: root.querySelector('.bm-volume input'),
       youtubeSurface: root.querySelector('.bm-youtube-surface'),
-      soundcloudSurface: root.querySelector('.bm-soundcloud-surface'),
       mini,
       miniMain: mini.querySelector('.bm-mini-main'),
       miniArt: mini.querySelector('.bm-mini-art'),
@@ -646,7 +633,8 @@
 
   async function fetchSearch(q, provider, signal) {
     const url = `${API_BASE}/search?q=${encodeURIComponent(q)}&provider=${encodeURIComponent(provider)}&limit=12`;
-    const res = await fetch(url, { signal });
+    const options = signal ? { signal } : {};
+    const res = await fetch(url, options);
     if (!res.ok) {
       let detail = '';
       try { detail = (await res.json())?.detail || ''; } catch {}
@@ -767,6 +755,7 @@
     destroyHls();
 
     state.currentTrack = track;
+    state.playbackTrack = track;
     state.currentKind = track.kind || providerKind(track.provider);
     state.ready = false;
     state.playing = false;
@@ -783,7 +772,6 @@
         return;
       }
       ui.youtubeSurface.hidden = true;
-      ui.soundcloudSurface.hidden = true;
       audio.src = track.blobUrl;
       audio.load();
       try {
@@ -797,16 +785,17 @@
 
     if (state.currentKind === 'soundcloud') {
       ui.youtubeSurface.hidden = true;
-      ui.soundcloudSurface.hidden = true;
       setStatus('Loading SoundCloud stream…');
 
       try {
         const resolved = await resolveSoundCloud(track.url);
         state.soundcloudResolved = resolved;
-        ui.soundcloudSurface.hidden = true;
+        state.playbackTrack = track;
         await loadSoundCloudStream(resolved.stream_url);
         state.ready = true;
         setStatus('');
+        renderNowPlaying();
+
         try {
           await audio.play();
         } catch {
@@ -814,16 +803,36 @@
         }
       } catch (err) {
         const message = String(err?.message || '');
+
         if (/DRM protected/i.test(message)) {
-          setStatus('This track uses SoundCloud protected playback. Switching to the official SoundCloud player…');
+          setStatus('SoundCloud protected this track. Finding a YouTube Music version…');
+
           try {
-            await loadSoundCloudWidget(track.url);
-            state.currentKind = 'soundcloud_widget';
+            const fallback = await findYouTubeFallback(track);
+            if (!fallback) {
+              throw new Error('No playable YouTube Music fallback was found for this track.');
+            }
+
+            state.playbackTrack = fallback;
+            state.currentKind = 'youtube';
+            ui.youtubeSurface.hidden = false;
+
+            await ensureYouTubePlayer();
+
+            const id = youtubeVideoId(fallback);
+            if (!id) throw new Error('The YouTube Music fallback has no playable video ID.');
+
             state.ready = true;
-            setStatus('');
-            scWidget?.play?.();
-          } catch (widgetErr) {
-            setStatus(widgetErr?.message || 'SoundCloud protected playback could not load.', true);
+            renderNowPlaying();
+            setStatus('SoundCloud version is protected — playing via YouTube Music.');
+
+            ytPlayer.loadVideoById(id);
+            ytPlayer.setVolume(Math.round(audio.volume * 100));
+          } catch (fallbackErr) {
+            setStatus(
+              fallbackErr?.message || 'Could not find a playable YouTube Music fallback.',
+              true
+            );
           }
         } else {
           setStatus(message || 'Could not load this SoundCloud track.', true);
@@ -833,7 +842,7 @@
     }
 
     if (state.currentKind === 'youtube') {
-      ui.soundcloudSurface.hidden = true;
+      state.playbackTrack = track;
       ui.youtubeSurface.hidden = false;
       setStatus('Loading YouTube Music player…');
 
@@ -849,6 +858,75 @@
         setStatus(err?.message || 'YouTube player could not load.', true);
       }
     }
+  }
+
+  function normalizeWords(value) {
+    return String(value || '')
+      .toLowerCase()
+      .replace(/\([^)]*\)|\[[^\]]*\]/g, ' ')
+      .replace(/\bofficial\b|\baudio\b|\bvideo\b|\bvisualizer\b|\blyrics?\b|\btopic\b|\bvevo\b/g, ' ')
+      .replace(/[^a-z0-9]+/g, ' ')
+      .trim()
+      .split(/\s+/)
+      .filter(Boolean);
+  }
+
+  function wordOverlapScore(a, b) {
+    const A = new Set(normalizeWords(a));
+    const B = new Set(normalizeWords(b));
+    if (!A.size || !B.size) return 0;
+
+    let common = 0;
+    for (const word of A) {
+      if (B.has(word)) common += 1;
+    }
+
+    return common / Math.max(A.size, B.size);
+  }
+
+  function fallbackScore(source, candidate) {
+    let score = 0;
+
+    score += wordOverlapScore(source.title, candidate.title) * 65;
+    score += wordOverlapScore(source.artist, candidate.artist) * 25;
+
+    const sourceDuration = Number(source.duration) || 0;
+    const candidateDuration = Number(candidate.duration) || 0;
+
+    if (sourceDuration && candidateDuration) {
+      const diff = Math.abs(sourceDuration - candidateDuration);
+      if (diff <= 3) score += 15;
+      else if (diff <= 8) score += 10;
+      else if (diff <= 15) score += 5;
+      else if (diff >= 60) score -= 20;
+    }
+
+    const combined = `${candidate.title} ${candidate.artist}`.toLowerCase();
+    const sourceText = `${source.title} ${source.artist}`.toLowerCase();
+
+    if (combined.includes('live') && !sourceText.includes('live')) score -= 12;
+    if (combined.includes('remix') && !sourceText.includes('remix')) score -= 10;
+    if (combined.includes('cover')) score -= 12;
+    if (combined.includes('sped up') || combined.includes('slowed')) score -= 10;
+
+    return score;
+  }
+
+  async function findYouTubeFallback(sourceTrack) {
+    const query = `${sourceTrack.title} ${sourceTrack.artist}`.trim();
+    const raw = await fetchSearch(query, 'youtube_music');
+
+    const candidates = raw
+      .map(normalizeApiTrack)
+      .filter(track => track.kind === 'youtube' && isPlayableYouTubeResult(track));
+
+    if (!candidates.length) return null;
+
+    const ranked = candidates
+      .map(track => ({ track, score: fallbackScore(sourceTrack, track) }))
+      .sort((a, b) => b.score - a.score);
+
+    return ranked[0]?.track || null;
   }
 
   async function resolveSoundCloud(url) {
@@ -937,109 +1015,6 @@
       try { hls.destroy(); } catch {}
       hls = null;
     }
-  }
-
-  function ensureSoundCloudApi() {
-    if (window.SC?.Widget) return Promise.resolve(window.SC);
-    if (scApiPromise) return scApiPromise;
-
-    scApiPromise = new Promise((resolve, reject) => {
-      const existing = document.querySelector('script[data-blobby-soundcloud-api]');
-      if (existing) {
-        const check = () => {
-          if (window.SC?.Widget) resolve(window.SC);
-          else reject(new Error('SoundCloud Widget API did not initialize.'));
-        };
-        existing.addEventListener('load', check, { once: true });
-        existing.addEventListener('error', () => reject(new Error('SoundCloud Widget API failed to load.')), { once: true });
-        return;
-      }
-
-      const s = document.createElement('script');
-      s.src = 'https://w.soundcloud.com/player/api.js';
-      s.async = true;
-      s.dataset.blobbySoundcloudApi = '1';
-      s.onload = () => {
-        if (window.SC?.Widget) resolve(window.SC);
-        else reject(new Error('SoundCloud Widget API did not initialize.'));
-      };
-      s.onerror = () => reject(new Error('SoundCloud Widget API failed to load.'));
-      document.head.append(s);
-    });
-
-    return scApiPromise;
-  }
-
-  async function loadSoundCloudWidget(trackUrl) {
-    const SC = await ensureSoundCloudApi();
-    const iframe = document.getElementById('blobbyMusicSoundCloudPlayer');
-    if (!iframe) throw new Error('SoundCloud player frame is missing.');
-
-    try { audio.pause(); } catch {}
-    destroyHls();
-
-    ui.youtubeSurface.hidden = true;
-    ui.soundcloudSurface.hidden = false;
-
-    scWidgetReady = false;
-    scWidgetDuration = Number(state.currentTrack?.duration || 0) * 1000;
-    scWidgetPosition = 0;
-
-    const src =
-      'https://w.soundcloud.com/player/?url=' + encodeURIComponent(trackUrl) +
-      '&auto_play=false&buying=false&sharing=false&download=false' +
-      '&show_artwork=false&show_playcount=false&show_user=true&visual=false';
-
-    iframe.src = src;
-    scWidget = SC.Widget(iframe);
-
-    await new Promise((resolve, reject) => {
-      const timeout = setTimeout(() => reject(new Error('SoundCloud protected player timed out.')), 15000);
-
-      scWidget.bind(SC.Widget.Events.READY, () => {
-        clearTimeout(timeout);
-        scWidgetReady = true;
-
-        try {
-          scWidget.setVolume(Math.round(audio.volume * 100));
-          scWidget.getDuration(ms => {
-            if (Number(ms) > 0) scWidgetDuration = Number(ms);
-          });
-        } catch {}
-
-        resolve();
-      });
-
-      scWidget.bind(SC.Widget.Events.PLAY, () => {
-        state.playing = true;
-        renderPlayerControls();
-      });
-
-      scWidget.bind(SC.Widget.Events.PAUSE, () => {
-        state.playing = false;
-        renderPlayerControls();
-      });
-
-      scWidget.bind(SC.Widget.Events.FINISH, () => {
-        state.playing = false;
-        renderPlayerControls();
-        onEnded();
-      });
-
-      scWidget.bind(SC.Widget.Events.PLAY_PROGRESS, e => {
-        if (Number.isFinite(e?.currentPosition)) scWidgetPosition = e.currentPosition;
-        if (Number.isFinite(e?.relativePosition) && scWidgetDuration) {
-          scWidgetPosition = e.relativePosition * scWidgetDuration;
-        }
-        updateProgress();
-      });
-
-      scWidget.bind(SC.Widget.Events.ERROR, () => {
-        setStatus('SoundCloud could not play this track in the official player.', true);
-      });
-    });
-
-    return scWidget;
   }
 
   function ensureYouTubeApi() {
@@ -1162,15 +1137,6 @@
       return;
     }
 
-    if (state.currentKind === 'soundcloud_widget') {
-      if (!scWidget || !scWidgetReady) {
-        playTrack(state.currentTrack);
-        return;
-      }
-      try { scWidget.toggle(); } catch {}
-      return;
-    }
-
     if (audio.paused) audio.play().catch(() => {
       setStatus('Tap the track again if playback was blocked.', true);
     });
@@ -1181,9 +1147,6 @@
     try { audio.pause(); } catch {}
     if (ytPlayer && ytReady) {
       try { ytPlayer.pauseVideo(); } catch {}
-    }
-    if (scWidget && scWidgetReady) {
-      try { scWidget.pause(); } catch {}
     }
     if (update) {
       state.playing = false;
@@ -1243,9 +1206,6 @@
     if (ytPlayer && ytReady) {
       try { ytPlayer.setVolume(percent); } catch {}
     }
-    if (scWidget && scWidgetReady) {
-      try { scWidget.setVolume(percent); } catch {}
-    }
 
     savePrefs();
   }
@@ -1254,18 +1214,12 @@
     if (state.currentKind === 'youtube' && ytPlayer && ytReady) {
       try { return Number(ytPlayer.getCurrentTime()) || 0; } catch {}
     }
-    if (state.currentKind === 'soundcloud_widget' && scWidgetReady) {
-      return (Number(scWidgetPosition) || 0) / 1000;
-    }
     return Number(audio.currentTime) || 0;
   }
 
   function duration() {
     if (state.currentKind === 'youtube' && ytPlayer && ytReady) {
       try { return Number(ytPlayer.getDuration()) || Number(state.currentTrack?.duration) || 0; } catch {}
-    }
-    if (state.currentKind === 'soundcloud_widget' && scWidgetReady) {
-      return (Number(scWidgetDuration) || 0) / 1000 || Number(state.currentTrack?.duration) || 0;
     }
     return Number(audio.duration) || Number(state.currentTrack?.duration) || 0;
   }
@@ -1275,11 +1229,6 @@
 
     if (state.currentKind === 'youtube' && ytPlayer && ytReady) {
       try { ytPlayer.seekTo(seconds, true); } catch {}
-    } else if (state.currentKind === 'soundcloud_widget' && scWidgetReady) {
-      try {
-        scWidget.seekTo(seconds * 1000);
-        scWidgetPosition = seconds * 1000;
-      } catch {}
     } else {
       try { audio.currentTime = seconds; } catch {}
     }
@@ -1321,7 +1270,14 @@
 
     ui.nowTitle.textContent = t.title;
     ui.nowArtist.textContent = t.artist;
-    ui.nowSource.textContent = providerLabel(t.provider);
+    const playback = state.playbackTrack || t;
+    const originalLabel = providerLabel(t.provider);
+    const playbackLabel = providerLabel(playback.provider);
+
+    ui.nowSource.textContent =
+      playback.provider && playback.provider !== t.provider
+        ? `${originalLabel} • playing via ${playbackLabel}`
+        : originalLabel;
     ui.favoriteNow.disabled = t.kind === 'local';
     ui.favoriteNow.textContent = isFavorite(t) ? '♥' : '♡';
 
@@ -1536,6 +1492,7 @@
       provider: state.provider,
       playing: state.playing,
       current: cleanTrackForStorage(state.currentTrack),
+      playback: cleanTrackForStorage(state.playbackTrack),
       queueCount: state.queue.length
     })
   });
