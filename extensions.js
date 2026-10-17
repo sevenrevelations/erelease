@@ -6,7 +6,7 @@
   const MAX_PACKAGE_BYTES=25*1024*1024;
   const SETTINGS_KEY='blobby.extensions.settings.v1';
   const textDecoder=new TextDecoder('utf-8');
-  let dbPromise=null, root=null, panel=null, list=null, stats=null, runtimeBadge=null, fileInput=null, toastNode=null, ready=false, openState=false, runtimeReady=false, toastTimer=0;
+  let dbPromise=null, root=null, panel=null, list=null, stats=null, runtimeBadge=null, shieldCopy=null, fileInput=null, toastNode=null, ready=false, openState=false, runtimeReady=false, toastTimer=0;
   let records=[];
 
   const $=(s,p=document)=>p.querySelector(s);
@@ -55,7 +55,7 @@
     const content=el('main','blobby-extensions-content hide-scrollbar');
     const hero=el('section','blobby-extension-hero');
     hero.append(el('div','blobby-extension-hero-icon','◆'));
-    const heroCopy=el('div','blobby-extension-hero-copy');heroCopy.append(el('strong','', 'Blobby Shield'),el('span','', 'Built-in ad blocking switch. The browser runtime bridge will apply this when native filtering is connected.'));
+    const heroCopy=el('div','blobby-extension-hero-copy');shieldCopy=el('span','', 'Built-in ad blocking switch. Connect the App Inventor runtime to filter pages in WebViewer_Browser.');heroCopy.append(el('strong','', 'Blobby Shield'),shieldCopy);
     const shieldSwitch=switchControl(settings.adblock,async checked=>{
       settings.adblock=checked;saveSettings();syncNative();renderStats();window.dispatchEvent(new CustomEvent('blobby:adblock-change',{detail:{enabled:checked}}));toast(`Blobby Shield ${checked?'enabled':'disabled'}.`);
     },'Toggle Blobby Shield');
@@ -105,6 +105,7 @@
   function renderRuntime(){
     if(!runtimeBadge)return;runtimeBadge.dataset.ready=String(runtimeReady);
     $('span',runtimeBadge).textContent=runtimeReady?'Native extension runtime connected':'Packages ready · runtime bridge not connected';
+    if(shieldCopy)shieldCopy.textContent=runtimeReady?'Active page-level ad/tracker filtering for WebViewer_Browser.':'Built-in ad blocking switch. Connect the App Inventor runtime to filter pages in WebViewer_Browser.';
   }
 
   function renderCard(record){
@@ -246,7 +247,7 @@
     const payload={version:1,adblock:!!settings.adblock,extensions:records.filter(x=>x.enabled).map(x=>({id:x.id,name:x.name,version:x.version,manifest:x.manifest}))};
     window.dispatchEvent(new CustomEvent('blobby:extensions-config',{detail:payload}));
     if(runtimeReady&&window.BlobbyBridge?.send){
-      try{const json=JSON.stringify(payload);if(json.length<12000)window.BlobbyBridge.send('EXTENSIONS_SYNC',encodeURIComponent(json));}
+      try{window.BlobbyBridge.send('ADBLOCK',settings.adblock?'1':'0');const json=JSON.stringify(payload);if(json.length<12000)window.BlobbyBridge.send('EXTENSIONS_SYNC',encodeURIComponent(json));}
       catch(err){console.warn('Extension runtime sync failed',err);}
     }
   }
