@@ -236,3 +236,115 @@ html[data-performance="true"] .blobby-chat-panel,html[data-performance="true"] .
     transform:none!important;
   }
 }
+
+
+/* Stage 12.2 — Chat shell structure matches DMs / Groups -------------------
+   STRUCTURE ONLY. Keep the Stage 12 chat appearance unchanged.
+   Important: do NOT use (pointer:coarse) here; touch-enabled desktops can
+   report a coarse pointer and were incorrectly getting the mobile layout.
+---------------------------------------------------------------------------- */
+
+.blobby-chat-panel{
+  position:absolute!important;
+  left:50%!important;
+  top:50%!important;
+  right:auto!important;
+  bottom:auto!important;
+  inset:auto!important;
+
+  width:min(980px,96vw)!important;
+  height:min(760px,94svh)!important;
+
+  overflow:hidden!important;
+  border-radius:20px!important;
+
+  opacity:0!important;
+  visibility:hidden!important;
+  pointer-events:none!important;
+  transform:translate(-50%,-48%) scale(.985)!important;
+
+  transition:
+    opacity .18s ease,
+    transform .22s cubic-bezier(.2,.75,.2,1),
+    visibility 0s linear .22s!important;
+}
+
+.blobby-chat-root[data-open="true"] .blobby-chat-panel{
+  opacity:1!important;
+  visibility:visible!important;
+  pointer-events:auto!important;
+  transform:translate(-50%,-50%) scale(1)!important;
+  transition:
+    opacity .18s ease,
+    transform .22s cubic-bezier(.2,.75,.2,1),
+    visibility 0s linear 0s!important;
+}
+
+/* Three-column Fern-style chat, inside the same centered shell geometry
+   used by DMs / Groups. */
+.blobby-chat-workspace{
+  width:100%!important;
+  height:100%!important;
+  min-width:0!important;
+  min-height:0!important;
+  grid-template-columns:180px minmax(0,1fr) 190px!important;
+}
+
+/* Closed chat can never capture clicks. */
+.blobby-chat-root:not([data-open="true"]) .blobby-chat-panel,
+.blobby-chat-root:not([data-open="true"]) .blobby-chat-panel *{
+  pointer-events:none!important;
+}
+
+/* Tablet behavior: still centered, just remove the members column. */
+@media(max-width:1040px) and (min-width:721px){
+  .blobby-chat-panel{
+    width:min(900px,96vw)!important;
+    height:min(720px,94svh)!important;
+    left:50%!important;
+    top:50%!important;
+    right:auto!important;
+    bottom:auto!important;
+    transform:translate(-50%,-48%) scale(.985)!important;
+  }
+
+  .blobby-chat-root[data-open="true"] .blobby-chat-panel{
+    transform:translate(-50%,-50%) scale(1)!important;
+  }
+
+  .blobby-chat-workspace{
+    grid-template-columns:180px minmax(0,1fr)!important;
+  }
+
+  .blobby-chat-members{
+    display:none!important;
+  }
+}
+
+/* Match DM / Group mobile breakpoint. ONLY viewport width triggers this. */
+@media(max-width:720px){
+  .blobby-chat-panel{
+    left:0!important;
+    top:0!important;
+    right:auto!important;
+    bottom:auto!important;
+    width:100vw!important;
+    height:100svh!important;
+    border:0!important;
+    border-radius:0!important;
+    transform:translateY(10px) scale(.99)!important;
+  }
+
+  .blobby-chat-root[data-open="true"] .blobby-chat-panel{
+    transform:none!important;
+  }
+
+  .blobby-chat-workspace{
+    grid-template-columns:1fr!important;
+  }
+
+  .blobby-chat-channels,
+  .blobby-chat-members{
+    display:none!important;
+  }
+}
