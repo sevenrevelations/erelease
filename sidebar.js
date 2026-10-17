@@ -8,6 +8,7 @@
     groups:'<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8.3" r="3"/><circle cx="17" cy="9.5" r="2.4"/><path d="M3.5 19.5v-1.2c0-3 2.5-5.4 5.5-5.4s5.5 2.4 5.5 5.4v1.2M14.3 14.2c.8-.6 1.8-.9 2.8-.9 2.3 0 4.2 1.8 4.2 4.1v1"/></svg>',
     leaderboard:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 4h8v2.5a4 4 0 0 1-8 0zM8.2 5.2H4.5v1.4a4 4 0 0 0 4.3 4M15.8 5.2h3.7v1.4a4 4 0 0 1-4.3 4M12 10.5v4M8.5 20h7M9.5 14.5h5l1 5h-7z"/></svg>',
     music:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18.5a3 3 0 1 1-3-3c.7 0 1.4.2 2 .7V6l11-2v11.5a3 3 0 1 1-1-2.2V7.1L9 8.7z"/></svg>',
+    extensions:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8.7 3.5h3.1a2.7 2.7 0 1 0 4.4 0h2.3a2 2 0 0 1 2 2v3.2a2.7 2.7 0 1 0 0 4.4v5.4a2 2 0 0 1-2 2h-5.4a2.7 2.7 0 1 0-4.4 0H5.5a2 2 0 0 1-2-2v-3.2a2.7 2.7 0 1 0 0-4.4V5.5a2 2 0 0 1 2-2z"/></svg>',
     bookmarks:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.5 3.5h11v17L12 17l-5.5 3.5z"/></svg>',
     history:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4.2 7.2V3.8M4.2 3.8h3.4M4.5 4.5a9 9 0 1 1-1.1 10.8M12 7.2v5l3.4 2"/></svg>',
     downloads:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5v11M7.5 10.5 12 15l4.5-4.5M4.5 20h15"/></svg>',
@@ -36,6 +37,7 @@
     {id:'leaderboard',label:'Leaderboard',icon:'leaderboard',action:'leaderboard'},
     {separator:true},
     {id:'music',label:'Music',icon:'music',action:'music'},
+    {id:'extensions',label:'Extensions',icon:'extensions',action:'extensions'},
     {separator:true},
     {id:'bookmarks',label:'Bookmarks',icon:'bookmarks',panel:'bookmarks'},
     {id:'history',label:'History',icon:'history',panel:'history'},
@@ -104,21 +106,18 @@
     }
     if(item.action==='chat'){
       window.BlobbyPanels?.close();
-      if(window.BlobbyProfile?.state?.().open)window.BlobbyProfile.close();
       if(window.BlobbyDM?.state?.().open)window.BlobbyDM.close();
       setTimeout(()=>window.BlobbyChat?.open?.(),30);
       return;
     }
     if(item.action==='dms'){
       window.BlobbyPanels?.close();
-      if(window.BlobbyProfile?.state?.().open)window.BlobbyProfile.close();
       if(window.BlobbyChat?.state?.().open)window.BlobbyChat.close();
       setTimeout(()=>window.BlobbyDM?.open?.(),30);
       return;
     }
     if(item.action==='groups'){
       window.BlobbyPanels?.close();
-      if(window.BlobbyProfile?.state?.().open)window.BlobbyProfile.close();
       if(window.BlobbyChat?.state?.().open)window.BlobbyChat.close();
       if(window.BlobbyDM?.state?.().open)window.BlobbyDM.close();
       if(window.BlobbyLeaderboard?.state?.().open)window.BlobbyLeaderboard.close();
@@ -127,7 +126,6 @@
     }
     if(item.action==='music'){
       window.BlobbyPanels?.close();
-      if(window.BlobbyProfile?.state?.().open)window.BlobbyProfile.close();
       if(window.BlobbyChat?.state?.().open)window.BlobbyChat.close();
       if(window.BlobbyDM?.state?.().open)window.BlobbyDM.close();
       if(window.BlobbyGroup?.state?.().open)window.BlobbyGroup.close();
@@ -137,11 +135,21 @@
     }
     if(item.action==='leaderboard'){
       window.BlobbyPanels?.close();
-      if(window.BlobbyProfile?.state?.().open)window.BlobbyProfile.close();
       if(window.BlobbyChat?.state?.().open)window.BlobbyChat.close();
       if(window.BlobbyDM?.state?.().open)window.BlobbyDM.close();
       if(window.BlobbyGroup?.state?.().open)window.BlobbyGroup.close();
       setTimeout(()=>window.BlobbyLeaderboard?.open?.(),30);
+      return;
+    }
+    if(item.action==='extensions'){
+      window.BlobbyPanels?.close();
+      if(window.BlobbyChat?.state?.().open)window.BlobbyChat.close();
+      if(window.BlobbyDM?.state?.().open)window.BlobbyDM.close();
+      if(window.BlobbyGroup?.state?.().open)window.BlobbyGroup.close();
+      if(window.BlobbyLeaderboard?.state?.().open)window.BlobbyLeaderboard.close();
+      if(window.BlobbyMusic?.state?.().open)window.BlobbyMusic.close();
+      if(window.BlobbyProfile?.state?.().open)window.BlobbyProfile.close?.();
+      setTimeout(()=>window.BlobbyExtensions?.open?.(),30);
       return;
     }
     if(item.panel)window.BlobbyPanels?.toggle(item.panel);
@@ -153,9 +161,9 @@
     const intro=node('section','blobby-sidebar-intro');intro.append(icon(data.icon),node('p','blobby-sidebar-copy'));intro.querySelector('p').textContent=data.body;body.append(intro);
     if(id==='hub'){
       const grid=node('div','blobby-sidebar-status-grid');
-      const entries=[['Profile','Ready','profile'],['Global Chat','Ready','chat'],['DMs','Ready','dm'],['Groups','Ready','groups'],['Leaderboard','Ready','leaderboard'],['Music','Ready','music']];
-      for(const [name,status,ic] of entries){const card=node('button','blobby-sidebar-status-card');card.type='button';card.append(icon(ic));const copy=node('span');const strong=node('strong');strong.textContent=name;const small=node('small');small.textContent=status;copy.append(strong,small);card.append(copy);if(name==='Profile')card.addEventListener('click',()=>activate({action:'profile'}));else if(name==='Global Chat')card.addEventListener('click',()=>activate({action:'chat'}));else if(name==='DMs')card.addEventListener('click',()=>activate({action:'dms'}));else if(name==='Groups')card.addEventListener('click',()=>activate({action:'groups'}));else if(name==='Leaderboard')card.addEventListener('click',()=>activate({action:'leaderboard'}));else if(name==='Music')card.addEventListener('click',()=>activate({action:'music'}));else card.addEventListener('click',()=>window.BlobbyPanels?.open(name.toLowerCase()));grid.append(card);}body.append(grid);
-      const note=node('p','blobby-sidebar-note');note.textContent='The sidebar is a lightweight launcher. Profile, Chat, DMs, Groups, Leaderboard, and Music open in their own standalone interfaces so browsing stays stable and fast.';body.append(note);
+      const entries=[['Profile','Ready','profile'],['Global Chat','Ready','chat'],['DMs','Ready','dm'],['Groups','Ready','groups'],['Leaderboard','Ready','leaderboard'],['Music','Ready','music'],['Extensions','Ready','extensions']];
+      for(const [name,status,ic] of entries){const card=node('button','blobby-sidebar-status-card');card.type='button';card.append(icon(ic));const copy=node('span');const strong=node('strong');strong.textContent=name;const small=node('small');small.textContent=status;copy.append(strong,small);card.append(copy);if(name==='Profile')card.addEventListener('click',()=>activate({action:'profile'}));else if(name==='Global Chat')card.addEventListener('click',()=>activate({action:'chat'}));else if(name==='DMs')card.addEventListener('click',()=>activate({action:'dms'}));else if(name==='Groups')card.addEventListener('click',()=>activate({action:'groups'}));else if(name==='Leaderboard')card.addEventListener('click',()=>activate({action:'leaderboard'}));else if(name==='Music')card.addEventListener('click',()=>activate({action:'music'}));else if(name==='Extensions')card.addEventListener('click',()=>activate({action:'extensions'}));else card.addEventListener('click',()=>window.BlobbyPanels?.open(name.toLowerCase()));grid.append(card);}body.append(grid);
+      const note=node('p','blobby-sidebar-note');note.textContent='The sidebar is a lightweight launcher. Profile, Chat, DMs, Groups, Leaderboard, Music, and Extensions open in their own standalone interfaces so browsing stays stable and fast.';body.append(note);
     }else{
       const note=node('p','blobby-sidebar-note');note.textContent='This destination is intentionally lightweight for now. We will activate it in its own tested stage.';body.append(note);
     }
