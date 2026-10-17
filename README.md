@@ -1,4 +1,4 @@
-# blobby.vip v8.2 — stability & polish release
+# early release version
 
 A performance-first customizable browser controller designed for a two-WebViewer MIT App Inventor app.
 
