@@ -5,7 +5,9 @@
 
   const MAX_IMAGE_BYTES=Math.max(1,Number(CONFIG.CHAT_MAX_IMAGE_MB||5))*1024*1024;
   const MAX_FILE_BYTES=Math.max(1,Number(CONFIG.CHAT_MAX_FILE_MB||10))*1024*1024;
-  const PAGE_SIZE=60;
+  const PAGE_SIZE=45;
+  const MAX_RENDERED_MESSAGES=120;
+  const MAX_PROFILE_ROWS=300;
   const ALLOWED_IMAGE_TYPES=new Set(['image/jpeg','image/png','image/webp']);
   const ALLOWED_FILE_TYPES=new Set([
     'application/pdf','text/plain','text/csv',
@@ -18,9 +20,9 @@
 
   const state={
     open:false,ready:false,connecting:false,supabase:null,session:null,profile:null,
-    profiles:new Map(),conversations:[],activeId:'',messages:[],reactions:new Map(),
+    profiles:new Map(),conversations:[],activeId:'',messages:[],reactions:new Map(),historyMode:false,
     oldestLoadedAt:null,hasMore:true,loadingOlder:false,replyTo:null,signedUrls:new Map(),
-    blocked:new Set(),inboxChannel:null,pollTimer:0,refreshTimer:0,threadRefreshTimer:0
+    blocked:new Set(),inboxChannel:null,unsubscribePromise:null,pollTimer:0,refreshTimer:0,threadRefreshTimer:0
   };
   let ui={};
 
@@ -36,7 +38,7 @@
   function timeLabel(v){const d=new Date(v);return d.toLocaleTimeString([],{hour:'numeric',minute:'2-digit'});}
   function dayKey(v){const d=new Date(v);return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;}
   function dayLabel(v){const d=new Date(v),now=new Date(),y=new Date(Date.now()-86400000);if(dayKey(d)===dayKey(now))return'Today';if(dayKey(d)===dayKey(y))return'Yesterday';return d.toLocaleDateString([],{month:'short',day:'numeric',year:d.getFullYear()===now.getFullYear()?undefined:'numeric'});}
-  function friendlyError(e){const s=String(e?.message||e||'');if(/Unable to start conversation|block/i.test(s))return'You cannot message this person right now.';if(/muted/i.test(s))return'You are currently timed out from sending messages.';if(/banned/i.test(s))return'Your chat access is banned.';if(/row-level security|policy/i.test(s))return'That action is not allowed.';return s||'Something went wrong.';}
+  function friendlyError(e){const s=String(e?.message||e||'');if(/dm privacy nobody/i.test(s))return'This person is not accepting new direct messages.';if(/dm privacy shared groups/i.test(s))return'This person only accepts new DMs from people in shared groups.';if(/Unable to start conversation|block/i.test(s))return'You cannot message this person right now.';if(/muted/i.test(s))return'You are currently timed out from sending messages.';if(/banned/i.test(s))return'Your chat access is banned.';if(/row-level security|policy/i.test(s))return'That action is not allowed.';return s||'Something went wrong.';}
   function previewMessage(m){if(!m)return'No messages yet';if(m.deleted_at)return'Message deleted';if(m.body)return m.body.replace(/\s+/g,' ').slice(0,80);if(m.message_type==='image')return'📷 Photo';if(m.message_type==='file')return`📎 ${m.attachment_name||'File'}`;return'Message';}
   function debounce(fn,ms){let t=0;return(...args)=>{clearTimeout(t);t=setTimeout(()=>fn(...args),ms);};}
 
@@ -95,6 +97,7 @@
     ui.lightbox.onclick=e=>{if(e.target===ui.lightbox||e.target.tagName==='BUTTON')ui.lightbox.hidden=true;};
     document.addEventListener('keydown',e=>{if(e.key==='Escape'&&state.open){if(!ui.picker.hidden){closePicker();return;}closeDM();}});
     window.addEventListener('blobby:license-locked',disconnectDM);
+    window.addEventListener('blobby:profile-updated',e=>{const p=e.detail?.profile;if(!p?.id)return;state.profiles.set(p.id,{...(state.profiles.get(p.id)||{}),...p});if(p.id===currentProfileId())state.profile={...state.profile,...p};if(state.open){renderConversationList();renderPeople();if(state.activeId)renderThreadHead();}});
   }
 
   async function ensureIdentity(){
@@ -112,6 +115,7 @@
 
   async function openDM(){
     if(document.body.dataset.licenseState!=='unlocked')return;
+    if(!ui.root)createUI();
     if(window.BlobbyChat?.state?.().open)window.BlobbyChat.close();
     state.open=true;ui.root.dataset.open='true';ui.shell.setAttribute('aria-hidden','false');document.documentElement.dataset.dmOpen='true';appExpand();
     ui.list.replaceChildren(el('div','blobby-dm-loading','Loading conversations…'));
@@ -123,7 +127,7 @@
 
   async function disconnectDM(){state.ready=false;state.session=null;state.profile=null;state.profiles.clear();state.conversations=[];state.messages=[];state.reactions.clear();await unsubscribeRealtime();if(state.open)closeDM();}
 
-  async function loadProfiles(){const {data,error}=await state.supabase.from('chat_profiles').select('id,display_name,avatar_path,bio,status,custom_status,role,is_banned,muted_until,created_at').limit(1000);if(error)throw error;state.profiles.clear();for(const p of data||[])state.profiles.set(p.id,p);}
+  async function loadProfiles(){const shared=window.BlobbyChat?.profiles?.()||[];if(shared.length>1){state.profiles.clear();for(const p of shared)state.profiles.set(p.id,p);if(state.profile)state.profiles.set(state.profile.id,{...(state.profiles.get(state.profile.id)||{}),...state.profile});return;}const {data,error}=await state.supabase.from('chat_profiles').select('id,display_name,username,avatar_path,bio,status_emoji,status,custom_status,role,is_banned,muted_until,created_at').limit(MAX_PROFILE_ROWS);if(error)throw error;state.profiles.clear();for(const p of data||[])state.profiles.set(p.id,p);}
   async function loadBlocks(){const {data,error}=await state.supabase.from('chat_blocks').select('blocked_profile_id').eq('blocker_profile_id',currentProfileId());if(error){state.blocked.clear();return;}state.blocked=new Set((data||[]).map(x=>x.blocked_profile_id));}
 
   async function refreshAll(){await Promise.all([loadProfiles(),loadBlocks()]);await loadConversations();if(state.activeId){const exists=state.conversations.some(c=>c.id===state.activeId);if(exists)await loadMessages(true);else{state.activeId='';showThread(false);}}}
@@ -135,7 +139,7 @@
     const [{data:convs,error:e2},{data:members,error:e3},{data:recent,error:e4}]=await Promise.all([
       state.supabase.from('chat_dm_conversations').select('id,created_at,updated_at').in('id',ids),
       state.supabase.from('chat_dm_members').select('conversation_id,profile_id,last_read_at').in('conversation_id',ids),
-      state.supabase.from('chat_dm_messages').select('id,conversation_id,sender_profile_id,body,message_type,attachment_name,deleted_at,created_at').in('conversation_id',ids).order('created_at',{ascending:false}).limit(500)
+      state.supabase.from('chat_dm_messages').select('id,conversation_id,sender_profile_id,body,message_type,attachment_name,deleted_at,created_at').in('conversation_id',ids).order('created_at',{ascending:false}).limit(300)
     ]);if(e2)throw e2;if(e3)throw e3;if(e4)throw e4;
     const mineMap=new Map((mine||[]).map(x=>[x.conversation_id,x]));const memberMap=new Map();for(const m of members||[]){if(!memberMap.has(m.conversation_id))memberMap.set(m.conversation_id,[]);memberMap.get(m.conversation_id).push(m);}
     const latest=new Map(),unread=new Map();
@@ -159,7 +163,7 @@
   }
 
   async function startDM(p){
-    try{const {data,error}=await state.supabase.rpc('chat_start_dm',{target_profile_id:p.id});if(error)throw error;closePicker();await loadConversations();await openConversation(data);}
+    try{const {data,error}=await state.supabase.rpc('chat_start_dm_v2',{target_profile_id:p.id});if(error)throw error;closePicker();await loadConversations();await openConversation(data);}
     catch(e){toast(friendlyError(e));}
   }
 
@@ -169,13 +173,13 @@
   function renderThreadHead(){const c=activeConversation();if(!c)return;ui.threadPerson.replaceChildren(avatarNode(c.other));const copy=el('div','blobby-dm-thread-person-copy');const name=el('strong');appendIdentity(name,c.other);copy.append(name,el('span','',c.other.custom_status||statusLabel(c.other.status)));ui.threadPerson.append(copy);const blocked=state.blocked.has(c.other.id);ui.block.textContent=blocked?'Unblock':'Block';ui.block.dataset.blocked=String(blocked);syncSend();}
 
   async function loadMessages(reset=false){
-    if(!state.activeId)return;if(reset){state.messages=[];state.reactions.clear();state.oldestLoadedAt=null;state.hasMore=true;}
+    if(!state.activeId)return;if(reset){state.messages=[];state.reactions.clear();state.oldestLoadedAt=null;state.hasMore=true;state.historyMode=false;}
     let query=state.supabase.from('chat_dm_messages').select('*').eq('conversation_id',state.activeId).order('created_at',{ascending:false}).limit(PAGE_SIZE);if(state.oldestLoadedAt)query=query.lt('created_at',state.oldestLoadedAt);const {data,error}=await query;if(error)throw error;const batch=(data||[]).reverse();if(batch.length<PAGE_SIZE)state.hasMore=false;if(batch.length)state.oldestLoadedAt=batch[0].created_at;state.messages=reset?batch:[...batch,...state.messages];await loadReactions();renderMessages(reset?{scrollBottom:true}:{preserve:true});}
-  async function loadReactions(){const ids=state.messages.map(m=>m.id);state.reactions.clear();if(!ids.length)return;const {data,error}=await state.supabase.from('chat_dm_reactions').select('message_id,profile_id,emoji').in('message_id',ids);if(error)return;for(const r of data||[]){if(!state.reactions.has(r.message_id))state.reactions.set(r.message_id,[]);state.reactions.get(r.message_id).push(r);}}
+  async function loadReactions(){const windowMessages=state.historyMode?state.messages.slice(0,MAX_RENDERED_MESSAGES):state.messages.slice(-MAX_RENDERED_MESSAGES);const ids=windowMessages.map(m=>m.id);state.reactions.clear();if(!ids.length)return;const {data,error}=await state.supabase.from('chat_dm_reactions').select('message_id,profile_id,emoji').in('message_id',ids);if(error)return;for(const r of data||[]){if(!state.reactions.has(r.message_id))state.reactions.set(r.message_id,[]);state.reactions.get(r.message_id).push(r);}}
 
   function renderMessages({scrollBottom=false,preserve=false}={}){
-    const oldHeight=ui.messages.scrollHeight,oldTop=ui.messages.scrollTop;ui.messages.replaceChildren();if(state.hasMore&&state.messages.length){const older=el('button','blobby-dm-load-older','Load older messages');older.type='button';older.onclick=loadOlder;ui.messages.append(older);}if(!state.messages.length){ui.messages.append(el('div','blobby-dm-empty-list','No messages yet. Say hi 👋'));return;}
-    let lastDay='';for(const m of state.messages){const dk=dayKey(m.created_at);if(dk!==lastDay){ui.messages.append(el('div','blobby-dm-day',dayLabel(m.created_at)));lastDay=dk;}ui.messages.append(messageNode(m));}
+    const oldHeight=ui.messages.scrollHeight,oldTop=ui.messages.scrollTop;ui.messages.replaceChildren();if(state.hasMore&&state.messages.length){const older=el('button','blobby-dm-load-older','Load older messages');older.type='button';older.onclick=loadOlder;ui.messages.append(older);}if(state.historyMode){const latest=el('button','blobby-dm-load-older','Back to latest');latest.type='button';latest.onclick=()=>{state.historyMode=false;reloadThread().catch(()=>toast('Could not load the latest messages.'));};ui.messages.append(latest);}if(!state.messages.length){ui.messages.append(el('div','blobby-dm-empty-list','No messages yet. Say hi 👋'));return;}
+    let lastDay='';const visibleMessages=state.historyMode?state.messages.slice(0,MAX_RENDERED_MESSAGES):state.messages.slice(-MAX_RENDERED_MESSAGES);for(const m of visibleMessages){const dk=dayKey(m.created_at);if(dk!==lastDay){ui.messages.append(el('div','blobby-dm-day',dayLabel(m.created_at)));lastDay=dk;}ui.messages.append(messageNode(m));}
     if(preserve)ui.messages.scrollTop=oldTop+(ui.messages.scrollHeight-oldHeight);else if(scrollBottom)requestAnimationFrame(()=>ui.messages.scrollTo({top:ui.messages.scrollHeight,behavior:'auto'}));
   }
   function messageNode(m){
@@ -193,7 +197,7 @@
   async function openLightbox(m,img){const url=img.src||await signedUrlFor(m);if(!url)return;ui.lightboxImg.src=url;ui.lightboxImg.alt=m.attachment_name||'Shared image';ui.lightbox.hidden=false;}
   function reactionNode(m){const list=state.reactions.get(m.id)||[];if(!list.length)return null;const grouped=new Map();for(const r of list){if(!grouped.has(r.emoji))grouped.set(r.emoji,[]);grouped.get(r.emoji).push(r);}const box=el('div','blobby-dm-reactions');for(const [emoji,rows] of grouped){const b=el('button','blobby-dm-reaction',`${emoji} ${rows.length}`);b.type='button';b.dataset.mine=String(rows.some(r=>r.profile_id===currentProfileId()));b.onclick=()=>toggleReaction(m,emoji);box.append(b);}return box;}
 
-  async function loadOlder(){if(state.loadingOlder||!state.hasMore)return;state.loadingOlder=true;try{await loadMessages(false);}catch{toast('Could not load older messages.');}finally{state.loadingOlder=false;}}
+  async function loadOlder(){if(state.loadingOlder||!state.hasMore)return;state.loadingOlder=true;try{state.historyMode=true;await loadMessages(false);}catch{toast('Could not load older messages.');}finally{state.loadingOlder=false;}}
   function scrollToMessage(id){const n=ui.messages.querySelector(`[data-message-id="${CSS.escape(id)}"]`);if(n)n.scrollIntoView({block:'center',behavior:isReduced()?'auto':'smooth'});}
   async function markRead(){if(!state.activeId)return;const {error}=await state.supabase.rpc('chat_dm_mark_read',{target_conversation_id:state.activeId});if(!error){const c=activeConversation();if(c){c.unread=0;c.last_read_at=new Date().toISOString();renderConversationList();dispatchUnread();}}}
 
@@ -222,17 +226,28 @@
     await unsubscribeRealtime();if(!state.supabase||!state.profile)return;const ch=state.supabase.channel(`blobby-dm-${currentProfileId()}`);
     ch.on('postgres_changes',{event:'*',schema:'public',table:'chat_dm_messages'},()=>{scheduleInboxRefresh();scheduleThreadRefresh();});
     ch.on('postgres_changes',{event:'*',schema:'public',table:'chat_dm_reactions'},()=>scheduleThreadRefresh());
+    ch.on('postgres_changes',{event:'UPDATE',schema:'public',table:'chat_profiles'},payload=>{const p=payload.new;if(!p?.id)return;state.profiles.set(p.id,{...(state.profiles.get(p.id)||{}),...p});if(p.id===currentProfileId())state.profile={...state.profile,...p};if(state.open){renderConversationList();if(!ui.picker.hidden)renderPeople();if(state.activeId)renderThreadHead();}});
     ch.subscribe();state.inboxChannel=ch;
   }
-  async function unsubscribeRealtime(){if(state.inboxChannel&&state.supabase){try{await state.supabase.removeChannel(state.inboxChannel);}catch{}}state.inboxChannel=null;}
+  function unsubscribeRealtime(){if(state.unsubscribePromise)return state.unsubscribePromise;const ch=state.inboxChannel;state.inboxChannel=null;if(!ch||!state.supabase)return Promise.resolve();const job=state.supabase.removeChannel(ch).catch(()=>{}).finally(()=>{if(state.unsubscribePromise===job)state.unsubscribePromise=null;});state.unsubscribePromise=job;return job;}
   const scheduleInboxRefresh=debounce(async()=>{if(!state.open)return;try{await loadConversations();}catch{}},180);
-  const scheduleThreadRefresh=debounce(async()=>{if(!state.open||!state.activeId)return;try{await reloadThread();await markRead();}catch{}},180);
-  async function reloadThread(){if(!state.activeId)return;const id=state.activeId,nearBottom=ui.messages.scrollHeight-ui.messages.scrollTop-ui.messages.clientHeight<90;const {data,error}=await state.supabase.from('chat_dm_messages').select('*').eq('conversation_id',id).order('created_at',{ascending:false}).limit(120);if(error)throw error;if(id!==state.activeId)return;state.messages=(data||[]).reverse();state.hasMore=(data||[]).length>=120;state.oldestLoadedAt=state.messages[0]?.created_at||null;await loadReactions();renderMessages(nearBottom?{scrollBottom:true}:{preserve:true});await loadConversations();}
-  function startPolling(){stopPolling();state.pollTimer=setInterval(async()=>{if(!state.open||document.visibilityState!=='visible')return;try{await loadConversations();if(state.activeId)await reloadThread();}catch{}},15000);}
+  const scheduleThreadRefresh=debounce(async()=>{if(!state.open||!state.activeId)return;try{if(state.historyMode){await loadConversations();return;}await reloadThread();await markRead();}catch{}},180);
+  async function reloadThread(){if(!state.activeId)return;const id=state.activeId,nearBottom=ui.messages.scrollHeight-ui.messages.scrollTop-ui.messages.clientHeight<90;const {data,error}=await state.supabase.from('chat_dm_messages').select('*').eq('conversation_id',id).order('created_at',{ascending:false}).limit(90);if(error)throw error;if(id!==state.activeId)return;state.messages=(data||[]).reverse();state.historyMode=false;state.hasMore=(data||[]).length>=90;state.oldestLoadedAt=state.messages[0]?.created_at||null;await loadReactions();renderMessages(nearBottom?{scrollBottom:true}:{preserve:true});await loadConversations();}
+  function startPolling(){stopPolling();state.pollTimer=setInterval(async()=>{if(!state.open||document.visibilityState!=='visible')return;try{await loadConversations();if(state.activeId)await reloadThread();}catch{}},60000);}
   function stopPolling(){clearInterval(state.pollTimer);state.pollTimer=0;}
   function dispatchUnread(){const total=state.conversations.reduce((n,c)=>n+(c.unread||0),0);window.dispatchEvent(new CustomEvent('blobby:dm-unread',{detail:{count:total}}));}
 
-  function boot(){createUI();}
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
-  window.BlobbyDM=Object.freeze({open:openDM,close:closeDM,toggle:toggleDM,state:()=>({open:state.open,ready:state.ready,activeId:state.activeId,unread:state.conversations.reduce((n,c)=>n+(c.unread||0),0)})});
+
+  async function openWith(profileId){
+    await openDM();
+    const id=String(profileId||'');if(!id||id===currentProfileId())return;
+    let p=state.profiles.get(id);
+    if(!p){try{const {data}=await state.supabase.from('chat_profiles').select('id,display_name,username,avatar_path,bio,status_emoji,status,custom_status,role,is_banned,muted_until,created_at').eq('id',id).maybeSingle();if(data){p=data;state.profiles.set(id,p);}}catch{}}
+    if(!p)return toast('Profile not found.');
+    const existing=state.conversations.find(c=>c.other?.id===id);
+    if(existing)return openConversation(existing.id);
+    return startDM(p);
+  }
+
+  window.BlobbyDM=Object.freeze({open:openDM,openWith,close:closeDM,toggle:toggleDM,state:()=>({open:state.open,ready:state.ready,activeId:state.activeId,unread:state.conversations.reduce((n,c)=>n+(c.unread||0),0)})});
 })();

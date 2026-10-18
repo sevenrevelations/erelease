@@ -64,7 +64,7 @@ html[data-performance="true"] .blobby-chat-panel,html[data-performance="true"] .
 
 @keyframes blobbyTyping{0%,70%,100%{transform:translateY(0);opacity:.4}35%{transform:translateY(-2px);opacity:1}}@keyframes blobbyChatToast{from{opacity:0;transform:translateY(-5px)}to{opacity:1;transform:none}}
 
-@media(max-width:700px),(pointer:coarse){
+@media(max-width:700px){
   .blobby-chat-edge-zone{display:none}.blobby-chat-handle{top:auto;bottom:14px;right:12px;transform:none!important;border:1px solid color-mix(in srgb,var(--line) 82%,transparent);border-radius:14px;box-shadow:0 10px 30px #0007}.blobby-chat-handle-label{display:none}.blobby-chat-panel{width:min(440px,100vw)}
 }
 @media(max-width:520px){
@@ -149,7 +149,7 @@ html[data-performance="true"] .blobby-chat-panel,html[data-performance="true"] .
   .blobby-chat-members{display:none}
   .blobby-chat-popover,.blobby-chat-jump,.blobby-chat-toast-stack{right:14px!important}
 }
-@media(max-width:700px),(pointer:coarse){
+@media(max-width:700px){
   .blobby-chat-panel{inset:4px!important;width:auto!important}
   .blobby-chat-workspace{grid-template-columns:1fr}
   .blobby-chat-channels{display:none}
@@ -222,7 +222,7 @@ html[data-performance="true"] .blobby-chat-panel,html[data-performance="true"] .
 }
 
 /* Phone / App Inventor narrow view: use the whole available screen. */
-@media (max-width:700px),(pointer:coarse){
+@media (max-width:700px){
   .blobby-chat-panel{
     left:4px!important;
     right:4px!important;
@@ -348,3 +348,9 @@ html[data-performance="true"] .blobby-chat-panel,html[data-performance="true"] .
     display:none!important;
   }
 }
+
+/* Stage 14 lightweight settings + bounded message window */
+.blobby-chat-setting-note{margin:0;color:var(--muted,#91a49a);font-size:11px;line-height:1.4}
+.blobby-chat-window-note{margin:4px auto 10px;padding:5px 9px;border-radius:999px;background:rgba(255,255,255,.05);color:var(--muted,#91a49a);font-size:10px;width:max-content;max-width:90%}
+:root[data-performance="true"] .blobby-chat-typing-dots i,
+:root[data-low-end="true"] .blobby-chat-typing-dots i{animation:none!important}

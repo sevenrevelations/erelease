@@ -8,7 +8,9 @@
   const READ_KEY = 'blobby.chat.lastread.v1';
   const MAX_IMAGE_BYTES = Math.max(1, Number(CONFIG.CHAT_MAX_IMAGE_MB || 5)) * 1024 * 1024;
   const MAX_FILE_BYTES = Math.max(1, Number(CONFIG.CHAT_MAX_FILE_MB || 10)) * 1024 * 1024;
-  const PAGE_SIZE = 45;
+  const PAGE_SIZE = 40;
+  const MAX_RENDERED_MESSAGES = 140;
+  const MAX_PROFILE_ROWS = 300;
   const ALLOWED_IMAGE_TYPES = new Set(['image/jpeg','image/png','image/webp']);
   const ALLOWED_FILE_TYPES = new Set([
     'application/pdf','text/plain','text/csv',
@@ -19,16 +21,16 @@
   const ALLOWED_FILE_EXT = new Set(['pdf','txt','csv','docx','xlsx','pptx']);
   const EMOJIS = ['😀','😄','😂','🥹','😍','😎','🤯','😭','😤','🤔','🫡','👀','👍','👎','❤️','🔥','💯','🎉','✨','💀','🙏','👏','🤝','🫶','⚽','🎮','📚','🚀','✅','❌','🍿','🧠'];
   const QUICK_REACTIONS = ['👍','❤️','😂','🔥','💯','👀'];
-  const PROFILE_FIELDS = 'id,display_name,avatar_path,banner_path,banner_color,bio,pronouns,status,custom_status,role,is_banned,muted_until,created_at,profile_gradient_top,profile_gradient_bottom,name_style';
+  const PROFILE_FIELDS = 'id,display_name,username,avatar_path,banner_path,banner_color,bio,pronouns,status_emoji,status,custom_status,role,badges,is_banned,muted_until,created_at,profile_accent,profile_style,profile_gradient_top,profile_gradient_bottom,name_style,profile_links,dm_privacy,show_activity';
 
   const state = {
     open:false, peek:false, hoverOpened:false, ready:false, identityReady:false, connecting:false, connected:false,
-    supabase:null, session:null, profile:null, profiles:new Map(), messages:[], reactions:new Map(),
-    channel:null, onlineIds:new Set(), typing:new Map(), typingTimer:0, typingSent:false,
+    supabase:null, session:null, profile:null, profiles:new Map(), messages:[], reactions:new Map(), historyMode:false,
+    channel:null, unsubscribePromise:null, onlineIds:new Set(), typing:new Map(), typingTimer:0, typingSent:false,
     replyTo:null, unread:0, lastReadAt:readJSON(READ_KEY, 0) || 0, oldestLoadedAt:null,
     loadingOlder:false, hasMore:true, signedUrls:new Map(), avatarUrls:new Map(), blocked:new Set(),
     prefs:{ sounds:false, compact:false, reducedMotion:false, notifications:'mentions', ...readJSON(PREF_KEY,{}) },
-    activePopover:'', flyout:'', lastScrollNearBottom:true
+    activePopover:'', flyout:'', lastScrollNearBottom:true, typingRenderTimer:0, profileRenderTimer:0, profilesLoadedAt:0
   };
 
   let ui = {};
@@ -151,9 +153,8 @@
         <div class="blobby-chat-popover chat-emoji-popover" hidden><div class="blobby-chat-popover-head"><strong>Emoji</strong><button class="blobby-chat-icon-btn" type="button" data-close-popover>×</button></div><div class="blobby-chat-emoji-grid"></div></div>
 
         <section class="blobby-chat-flyout chat-settings-flyout" aria-label="Chat settings"><div class="blobby-chat-flyout-head"><button class="blobby-chat-icon-btn flyout-back" type="button">←</button><strong>Chat settings</strong></div><div class="blobby-chat-flyout-body">
-          <div class="blobby-chat-field"><label>Display name</label><input class="chat-display-name" maxlength="32" autocomplete="off"></div>
-          <div class="blobby-chat-field"><label>Custom status</label><input class="chat-custom-status" maxlength="80" placeholder="chilling, gaming, afk…"></div>
-          <div class="blobby-chat-field"><label>Presence</label><select class="chat-presence-status"><option value="online">Online</option><option value="away">Away</option><option value="dnd">Do Not Disturb</option><option value="invisible">Invisible</option></select></div>
+          <button class="blobby-chat-save chat-edit-profile" type="button">Edit profile & presence</button>
+          <p class="blobby-chat-setting-note">Name, avatar, bio, status, presence, colors and links are managed in your Profile.</p>
           <label class="blobby-chat-setting-row"><span>Notification sounds</span><input class="chat-sounds" type="checkbox"></label>
           <label class="blobby-chat-setting-row"><span>Compact messages</span><input class="chat-compact" type="checkbox"></label>
           <label class="blobby-chat-setting-row"><span>Reduced chat motion</span><input class="chat-reduced" type="checkbox"></label>
@@ -178,16 +179,16 @@
       settingsFlyout:q('.chat-settings-flyout',root),onlineFlyout:q('.chat-online-flyout',root),onlineList:q('.chat-online-list',root),jump:q('.blobby-chat-jump',root),
       memberList:q('.blobby-chat-members-list',root),memberCount:q('.blobby-chat-members-count',root),
       selfAvatar:q('.blobby-chat-self-avatar',root),selfName:q('.blobby-chat-self-copy strong',root),selfStatus:q('.blobby-chat-self-copy small',root),
-      displayName:q('.chat-display-name',root),customStatus:q('.chat-custom-status',root),presenceStatus:q('.chat-presence-status',root),sounds:q('.chat-sounds',root),compact:q('.chat-compact',root),reduced:q('.chat-reduced',root),saveSettings:q('.chat-save-settings',root),settingsError:q('.chat-settings-error',root),
+      editProfile:q('.chat-edit-profile',root),sounds:q('.chat-sounds',root),compact:q('.chat-compact',root),reduced:q('.chat-reduced',root),saveSettings:q('.chat-save-settings',root),settingsError:q('.chat-settings-error',root),
       toasts:q('.blobby-chat-toast-stack',root),lightbox:q('.blobby-chat-lightbox',root),lightboxImg:q('.blobby-chat-lightbox img',root)
     };
 
     const emojiGrid=q('.blobby-chat-emoji-grid',root);
     EMOJIS.forEach(e=>{ const b=el('button','',e); b.type='button'; b.onclick=()=>insertEmoji(e); emojiGrid.append(b); });
 
-    root.querySelectorAll('.chat-open-profile').forEach(b=>b.onclick=()=>window.BlobbyProfile?.open?.());
-    q('.chat-open-dms',root).onclick=()=>{closeChat();setTimeout(()=>window.BlobbyDM?.open?.(),40);};
-    q('.chat-open-groups',root).onclick=()=>{closeChat();setTimeout(()=>window.BlobbyGroup?.open?.(),40);};
+    root.querySelectorAll('.chat-open-profile').forEach(b=>b.onclick=()=>window.BlobbyFeatures?.open?.('profile').catch?.(console.warn));
+    q('.chat-open-dms',root).onclick=()=>{closeChat();setTimeout(()=>window.BlobbyFeatures?.open?.('dm').catch?.(console.warn),40);};
+    q('.chat-open-groups',root).onclick=()=>{closeChat();setTimeout(()=>window.BlobbyFeatures?.open?.('group').catch?.(console.warn),40);};
 
     ui.panel.inert=true;
     ui.panel.style.pointerEvents='none';
@@ -216,21 +217,21 @@
     ui.input.addEventListener('keydown',e=>{ if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendText();} });
     ui.send.onclick=sendText;
     ui.replying.querySelector('button').onclick=()=>setReply(null);
-    ui.jump.onclick=()=>{scrollBottom(true);ui.jump.hidden=true;};
+    ui.jump.onclick=()=>{state.historyMode=false;renderMessages();scrollBottom(true);ui.jump.hidden=true;};
     ui.messages.addEventListener('scroll',onMessagesScroll,{passive:true});
     ui.saveSettings.onclick=saveChatSettings;
+    ui.editProfile.onclick=()=>{closeFlyouts();closeChat();setTimeout(()=>window.BlobbyFeatures?.open?.('profile').catch?.(console.warn),20);};
     ui.lightbox.onclick=e=>{ if(e.target===ui.lightbox||e.target.tagName==='BUTTON')ui.lightbox.hidden=true; };
     document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&state.open){ if(state.flyout){closeFlyouts();return;} if(state.activePopover){closePopovers();return;} closeChat(); } });
     window.addEventListener('online',()=>{setConnection('connecting','Reconnecting…'); if(state.open)ensureConnected(true);});
     window.addEventListener('offline',()=>setConnection('offline','Offline'));
-    document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible'&&state.open)ensureConnected(); });
+    document.addEventListener('visibilitychange',()=>{if(!state.open)return;if(document.visibilityState==='visible')ensureConnected();else unsubscribeGeneral();});
     window.addEventListener('blobby:license-locked',disconnectChat);
-    window.addEventListener('blobby:profile-updated',async()=>{
-      if(!state.supabase||!state.profile)return;
-      try{
-        const {data}=await state.supabase.from('chat_profiles').select(PROFILE_FIELDS).eq('id',state.profile.id).maybeSingle();
-        if(data){state.profile={...state.profile,...data};state.profiles.set(data.id,data);renderMessages({preserveScroll:true});renderOnline();fillSettings();}
-      }catch{}
+    window.addEventListener('blobby:profile-updated',e=>{
+      const p=e.detail?.profile;if(!p?.id)return;
+      const merged={...(state.profiles.get(p.id)||{}),...p};state.profiles.set(p.id,merged);
+      if(p.id===currentProfileId())state.profile={...state.profile,...merged};
+      scheduleProfileRender();
     });
   }
 
@@ -267,6 +268,7 @@
   function closeChat(){
     if(!state.open)return;
 
+    markRead();
     state.open=false;
     state.peek=false;
     state.hoverOpened=false;
@@ -280,10 +282,20 @@
     ui.panel.style.pointerEvents='none';
 
     syncRootFlags();
-    markRead();
+    sendTypingStop();clearTimeout(state.typingRenderTimer);state.typing.clear();ui.typing.textContent='';
+    unsubscribeGeneral();
     appRestore();
   }
   function toggleChat(){ state.open?closeChat():openChat(); }
+
+  function unsubscribeGeneral(){
+    state.ready=false;state.connected=false;
+    if(state.unsubscribePromise)return state.unsubscribePromise;
+    const ch=state.channel;state.channel=null;
+    if(!ch||!state.supabase)return Promise.resolve();
+    const job=state.supabase.removeChannel(ch).catch(()=>{}).finally(()=>{if(state.unsubscribePromise===job)state.unsubscribePromise=null;});
+    state.unsubscribePromise=job;return job;
+  }
 
   async function loadSupabase(){
     if(state.supabase)return state.supabase;
@@ -304,7 +316,7 @@
     }
     state.session=session;
     await bindLicenseToChat();
-    await Promise.all([loadProfiles(),loadBlocks()]);
+    await loadBlocks();
     state.identityReady=true;
     return {supabase:state.supabase,session:state.session,profile:state.profile};
   }
@@ -315,6 +327,7 @@
     state.connecting=true; setConnection('connecting','Connecting…');
     try{
       await ensureIdentity(false);
+      if(!state.profilesLoadedAt||Date.now()-state.profilesLoadedAt>120000)await loadProfiles();
       await loadMessages(true);
       await subscribeRealtime();
       state.ready=true; state.connected=true; setConnection('connected','Connected'); renderMessages(); renderOnline();
@@ -336,14 +349,15 @@
   }
 
   async function loadProfiles(){
-    const {data,error}=await state.supabase.from('chat_profiles').select(PROFILE_FIELDS).limit(1000);
+    const {data,error}=await state.supabase.from('chat_profiles').select(PROFILE_FIELDS).limit(MAX_PROFILE_ROWS);
     if(error)throw error;
     (data||[]).forEach(p=>state.profiles.set(p.id,p));
+    state.profilesLoadedAt=Date.now();
     if(state.profile&&state.profiles.has(state.profile.id))state.profile={...state.profile,...state.profiles.get(state.profile.id)};
   }
 
   async function loadMessages(reset=false){
-    if(reset){state.messages=[];state.hasMore=true;state.oldestLoadedAt=null;ui.messages.replaceChildren(el('div','blobby-chat-loading','Loading messages…'));}
+    if(reset){state.messages=[];state.hasMore=true;state.oldestLoadedAt=null;state.historyMode=false;ui.messages.replaceChildren(el('div','blobby-chat-loading','Loading messages…'));}
     let query=state.supabase.from('chat_messages').select('*').eq('room_id',GENERAL_ROOM_ID).order('created_at',{ascending:false}).limit(PAGE_SIZE);
     if(state.oldestLoadedAt)query=query.lt('created_at',state.oldestLoadedAt);
     const {data,error}=await query;
@@ -365,7 +379,8 @@
   }
 
   async function loadReactions(){
-    const ids=state.messages.map(m=>m.id); if(!ids.length){state.reactions.clear();return;}
+    const windowMessages=state.historyMode?state.messages.slice(0,MAX_RENDERED_MESSAGES):state.messages.slice(-MAX_RENDERED_MESSAGES);
+    const ids=windowMessages.map(m=>m.id); if(!ids.length){state.reactions.clear();return;}
     const {data}=await state.supabase.from('chat_reactions').select('message_id,profile_id,emoji').in('message_id',ids);
     state.reactions.clear();
     for(const r of data||[]){ if(!state.reactions.has(r.message_id))state.reactions.set(r.message_id,[]); state.reactions.get(r.message_id).push(r); }
@@ -378,7 +393,7 @@
   }
 
   async function subscribeRealtime(){
-    if(state.channel)await state.supabase.removeChannel(state.channel);
+    await unsubscribeGeneral();
     const key=currentProfileId()||state.session?.user?.id||crypto.randomUUID();
     const ch=state.supabase.channel('blobby-general',{config:{presence:{key},broadcast:{self:false}}});
     ch.on('postgres_changes',{event:'INSERT',schema:'public',table:'chat_messages',filter:`room_id=eq.${GENERAL_ROOM_ID}`},async payload=>{
@@ -387,9 +402,9 @@
     ch.on('postgres_changes',{event:'UPDATE',schema:'public',table:'chat_messages',filter:`room_id=eq.${GENERAL_ROOM_ID}`},payload=>{
       const i=state.messages.findIndex(x=>x.id===payload.new.id); if(i>=0){state.messages[i]=payload.new;renderMessages({preserveScroll:true});}
     });
-    ch.on('postgres_changes',{event:'*',schema:'public',table:'chat_reactions'},async()=>{await loadReactions();renderMessages({preserveScroll:true});});
+    ch.on('postgres_changes',{event:'*',schema:'public',table:'chat_reactions'},()=>scheduleReactionRefresh());
     ch.on('postgres_changes',{event:'UPDATE',schema:'public',table:'chat_profiles'},payload=>{
-      if(payload.new?.id){state.profiles.set(payload.new.id,payload.new);if(payload.new.id===currentProfileId()){state.profile={...state.profile,...payload.new};fillSettings();}renderMessages({preserveScroll:true});renderOnline();}
+      if(payload.new?.id){state.profiles.set(payload.new.id,{...(state.profiles.get(payload.new.id)||{}),...payload.new});if(payload.new.id===currentProfileId())state.profile={...state.profile,...payload.new};scheduleProfileRender();}
     });
     ch.on('presence',{event:'sync'},()=>syncPresence(ch));
     ch.on('presence',{event:'join'},()=>syncPresence(ch));
@@ -420,7 +435,7 @@
     if(!state.channel||!state.connected)return;
     clearTimeout(state.typingTimer);
     if(!state.typingSent){state.typingSent=true;state.channel.send({type:'broadcast',event:'typing',payload:{profile_id:currentProfileId(),typing:true}});}
-    state.typingTimer=setTimeout(()=>{state.typingSent=false;state.channel?.send({type:'broadcast',event:'typing',payload:{profile_id:currentProfileId(),typing:false}});},1400);
+    state.typingTimer=setTimeout(()=>{state.typingSent=false;state.channel?.send({type:'broadcast',event:'typing',payload:{profile_id:currentProfileId(),typing:false}});},2200);
   }
 
   function renderTyping(){
@@ -429,7 +444,7 @@
     if(!names.length){ui.typing.textContent='';return;}
     let text=names.length===1?`${names[0]} is typing`:names.length===2?`${names[0]} and ${names[1]} are typing`:'Several people are typing';
     ui.typing.replaceChildren(document.createTextNode(text)); const dots=el('span','blobby-chat-typing-dots');dots.innerHTML='<i></i><i></i><i></i>';ui.typing.append(dots);
-    setTimeout(renderTyping,1800);
+    clearTimeout(state.typingRenderTimer);state.typingRenderTimer=setTimeout(renderTyping,1800);
   }
 
   function renderOnline(){
@@ -454,7 +469,7 @@
     const all=[...state.profiles.values()]
       .filter(p=>p.status!=='invisible'||p.id===currentProfileId())
       .sort((a,b)=>roleRank(b.role)-roleRank(a.role)||Number(onlineSet.has(b.id))-Number(onlineSet.has(a.id))||a.display_name.localeCompare(b.display_name))
-      .slice(0,120);
+      .slice(0,(isPerformance()||window.BlobbyPerformance?.lowEnd?.())?60:120);
 
     ui.memberCount.textContent=`${visible.length} online`;
 
@@ -477,13 +492,13 @@
     const row=el('button','blobby-chat-online-user');
     row.type='button';
     row.dataset.online=String(!!online);
-    row.onclick=()=>window.BlobbyProfile?.open?.(p.id);
+    row.onclick=()=>window.BlobbyFeatures?.open?.('profile',p.id).catch?.(console.warn);
     row.append(avatarNode(p));
 
     const copy=el('div','blobby-chat-online-copy');
     const strong=el('strong');
     appendIdentity(strong,p);
-    copy.append(strong,el('span','',p.custom_status||(online?statusLabel(p.status):'Offline')));
+    copy.append(strong,el('span','',p.show_activity===false?'':`${p.status_emoji||''}${p.status_emoji?' ':''}${p.custom_status||(online?statusLabel(p.status):'Offline')}`));
     row.append(copy);
     return row;
   }
@@ -492,7 +507,7 @@
     if(!state.profile||!ui.selfName)return;
     ui.selfName.textContent=state.profile.display_name||'Blobby user';
     applyProfileNameStyle(ui.selfName,state.profile);
-    ui.selfStatus.textContent=state.profile.custom_status||statusLabel(state.profile.status);
+    ui.selfStatus.textContent=state.profile.show_activity===false?'':`${state.profile.status_emoji||''}${state.profile.status_emoji?' ':''}${state.profile.custom_status||statusLabel(state.profile.status)}`;
     ui.selfAvatar.textContent=initials(state.profile.display_name);
     ui.selfAvatar.style.backgroundImage='';
 
@@ -515,7 +530,9 @@
     if(state.hasMore&&state.messages.length){const older=el('button','blobby-chat-mini-btn','Load older messages');older.style.display='block';older.style.margin='0 auto 8px';older.onclick=loadOlder;ui.messages.append(older);}
     if(!state.messages.length){ui.messages.append(el('div','blobby-chat-empty','No messages yet. Say hi 👋'));return;}
     let lastDay='', dividerShown=false;
-    for(const m of state.messages){
+    const visibleMessages=state.historyMode?state.messages.slice(0,MAX_RENDERED_MESSAGES):state.messages.slice(-MAX_RENDERED_MESSAGES);
+    if(state.messages.length>visibleMessages.length){const note=el('div','blobby-chat-window-note',`Showing latest ${visibleMessages.length} messages`);ui.messages.append(note);}
+    for(const m of visibleMessages){
       const dk=dayKey(m.created_at); if(dk!==lastDay){ui.messages.append(el('div','blobby-chat-day',dayLabel(m.created_at)));lastDay=dk;}
       if(!dividerShown&&state.lastReadAt&&new Date(m.created_at).getTime()>state.lastReadAt&&m.sender_profile_id!==currentProfileId()){ui.messages.append(el('div','blobby-chat-new-divider','New messages'));dividerShown=true;}
       if(state.blocked.has(m.sender_profile_id))continue;
@@ -565,7 +582,7 @@
     a.type='button';
     a.textContent=initials(p?.display_name);
     a.title=p?.display_name||'Profile';
-    a.onclick=e=>{e.stopPropagation();window.BlobbyProfile?.open?.(p?.id);};
+    a.onclick=e=>{e.stopPropagation();window.BlobbyFeatures?.open?.('profile',p?.id).catch?.(console.warn);};
 
     if(p?.avatar_path){
       avatarUrl(p.avatar_path).then(url=>{
@@ -612,7 +629,7 @@
     const name=el('button','blobby-chat-name',p?.display_name||'Unknown');
     name.type='button';
     applyProfileNameStyle(name,p);
-    name.onclick=e=>{e.stopPropagation();window.BlobbyProfile?.open?.(p?.id);};
+    name.onclick=e=>{e.stopPropagation();window.BlobbyFeatures?.open?.('profile',p?.id).catch?.(console.warn);};
     parent.append(name);
   }
   function previewMessage(m){if(m.deleted_at)return 'Message deleted';if(m.body)return m.body.replace(/\s+/g,' ').slice(0,90);if(m.message_type==='gif')return '[GIF]';if(m.message_type==='image')return '[Photo]';if(m.message_type==='file')return `[File: ${m.attachment_name||'attachment'}]`;return 'Message';}
@@ -641,8 +658,8 @@
     const box=el('div','blobby-chat-reactions'); for(const [emoji,rows] of grouped){const b=el('button','blobby-chat-reaction',`${emoji} ${rows.length}`);b.type='button';b.dataset.mine=String(rows.some(r=>r.profile_id===currentProfileId()));b.onclick=()=>toggleReaction(m,emoji);box.append(b);}return box;
   }
 
-  async function loadOlder(){if(state.loadingOlder||!state.hasMore)return;state.loadingOlder=true;const oldHeight=ui.messages.scrollHeight;try{await loadMessages(false);renderMessages({preserveScroll:true});ui.messages.scrollTop=ui.messages.scrollHeight-oldHeight;}catch(e){toast('Could not load older messages.');}finally{state.loadingOlder=false;}}
-  function onMessagesScroll(){state.lastScrollNearBottom=isNearBottom(); if(ui.messages.scrollTop<80&&state.hasMore&&!state.loadingOlder)loadOlder(); if(isNearBottom()){ui.jump.hidden=true;if(state.open)markRead();}}
+  async function loadOlder(){if(state.loadingOlder||!state.hasMore)return;state.loadingOlder=true;const oldHeight=ui.messages.scrollHeight;try{state.historyMode=true;await loadMessages(false);renderMessages({preserveScroll:true});ui.messages.scrollTop=ui.messages.scrollHeight-oldHeight;ui.jump.hidden=false;ui.jump.textContent='↓ Back to latest';}catch(e){toast('Could not load older messages.');}finally{state.loadingOlder=false;}}
+  function onMessagesScroll(){state.lastScrollNearBottom=isNearBottom(); if(ui.messages.scrollTop<80&&state.hasMore&&!state.loadingOlder)loadOlder(); if(isNearBottom()&&!state.historyMode){ui.jump.hidden=true;if(state.open)markRead();}}
   function isNearBottom(){return ui.messages.scrollHeight-ui.messages.scrollTop-ui.messages.clientHeight<90;}
   function scrollBottom(smooth=true){ui.messages.scrollTo({top:ui.messages.scrollHeight,behavior:(smooth&&!isReduced())?'smooth':'auto'});}
   function scrollToMessage(id){const n=ui.messages.querySelector(`[data-message-id="${CSS.escape(id)}"]`);if(n)n.scrollIntoView({block:'center',behavior:isReduced()?'auto':'smooth'});}
@@ -689,17 +706,14 @@
 
   function openFlyout(which){closePopovers();state.flyout=which;ui.settingsFlyout.dataset.open=String(which==='settings');ui.onlineFlyout.dataset.open=String(which==='online');if(which==='settings')fillSettings();if(which==='online')renderOnline();}
   function closeFlyouts(){state.flyout='';ui.settingsFlyout.dataset.open='false';ui.onlineFlyout.dataset.open='false';}
-  function fillSettings(){if(!state.profile||!ui.displayName)return;ui.displayName.value=state.profile.display_name||'';ui.customStatus.value=state.profile.custom_status||'';ui.presenceStatus.value=state.profile.status||'online';ui.sounds.checked=!!state.prefs.sounds;ui.compact.checked=!!state.prefs.compact;ui.reduced.checked=!!state.prefs.reducedMotion;}
+  function fillSettings(){if(!state.profile||!ui.sounds)return;ui.sounds.checked=!!state.prefs.sounds;ui.compact.checked=!!state.prefs.compact;ui.reduced.checked=!!state.prefs.reducedMotion;}
   async function saveChatSettings(){
-    ui.settingsError.textContent='';const displayName=safeName(ui.displayName.value),customStatus=safeText(ui.customStatus.value,80).trim(),status=ui.presenceStatus.value;
-    if(displayName.length<2){ui.settingsError.textContent='Display name must be at least 2 characters.';return;}
-    const {data,error}=await state.supabase.rpc('chat_update_profile',{p_display_name:displayName,p_custom_status:customStatus||null,p_status:status});
-    if(error){ui.settingsError.textContent=/cooldown/i.test(error.message)?'You can change your display name once every 10 minutes.':error.message||'Could not save profile.';return;}
-    if(data)state.profile={...state.profile,...data};state.profiles.set(state.profile.id,state.profile);
-    state.prefs.sounds=ui.sounds.checked;state.prefs.compact=ui.compact.checked;state.prefs.reducedMotion=ui.reduced.checked;writeJSON(PREF_KEY,state.prefs);syncRootFlags();renderMessages({preserveScroll:true});
-    if(state.channel){if(state.profile.status==='invisible')await state.channel.untrack();else await state.channel.track({profile_id:currentProfileId(),at:Date.now()});}
+    ui.settingsError.textContent='';state.prefs.sounds=ui.sounds.checked;state.prefs.compact=ui.compact.checked;state.prefs.reducedMotion=ui.reduced.checked;writeJSON(PREF_KEY,state.prefs);syncRootFlags();
     toast('Chat settings saved.');closeFlyouts();
   }
+
+  const scheduleReactionRefresh=debounce(async()=>{if(!state.open||!state.ready)return;try{await loadReactions();renderMessages({preserveScroll:true});}catch{}},160);
+  function scheduleProfileRender(){clearTimeout(state.profileRenderTimer);state.profileRenderTimer=setTimeout(()=>{if(!state.open)return;renderMessages({preserveScroll:true});renderOnline();renderSelfCard();fillSettings();},90);}
 
   function setConnection(kind,text){if(!ui.connection)return;ui.dot.dataset.state=kind;ui.connection.textContent=text;}
   function syncSend(){if(ui.send)ui.send.disabled=!ui.input.value.trim()||!state.ready;}
@@ -709,7 +723,7 @@
 
   function handleIncoming(m){
     const own=m.sender_profile_id===currentProfileId(); if(own){if(state.open)scrollBottom(true);return;}
-    if(state.open&&isNearBottom()){scrollBottom(true);markRead();}else{state.unread++;syncUnread();ui.jump.hidden=false;ui.jump.textContent=`↓ ${state.unread} new message${state.unread===1?'':'s'}`;}
+    if(state.open&&isNearBottom()&&!state.historyMode){scrollBottom(true);markRead();}else{state.unread++;syncUnread();ui.jump.hidden=false;ui.jump.textContent=`↓ ${state.unread} new message${state.unread===1?'':'s'}`;}
     if(state.prefs.sounds&&!isPerformance())playPing();
   }
   function playPing(){try{const A=window.AudioContext||window.webkitAudioContext;if(!A)return;const ctx=new A(),osc=ctx.createOscillator(),gain=ctx.createGain();osc.frequency.value=620;gain.gain.setValueAtTime(.025,ctx.currentTime);gain.gain.exponentialRampToValueAtTime(.0001,ctx.currentTime+.11);osc.connect(gain).connect(ctx.destination);osc.start();osc.stop(ctx.currentTime+.12);setTimeout(()=>ctx.close(),180);}catch{}}
@@ -717,11 +731,11 @@
   function syncUnread(){if(!ui.unread)return;ui.unread.hidden=state.unread<=0;ui.unread.textContent=state.unread>99?'99+':String(state.unread);}
 
   async function disconnectChat(){
-    state.ready=false;state.identityReady=false;state.connected=false;state.session=null;state.profile=null;state.messages=[];state.profiles.clear();state.onlineIds.clear();if(state.channel&&state.supabase){try{await state.supabase.removeChannel(state.channel);}catch{}}state.channel=null;setConnection('offline','Access locked');if(state.open)closeChat();
+    state.ready=false;state.identityReady=false;state.connected=false;state.session=null;state.profile=null;state.messages=[];state.profiles.clear();state.onlineIds.clear();await unsubscribeGeneral();setConnection('offline','Access locked');if(state.open)closeChat();
   }
 
   function boot(){createUI();if(document.body.dataset.licenseState==='unlocked')setConnection('offline','Open chat to connect');window.addEventListener('blobby:license-unlocked',()=>setConnection('offline','Open chat to connect'));}
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
 
-  window.BlobbyChat=Object.freeze({open:openChat,close:closeChat,toggle:toggleChat,backend:async()=>{const x=await ensureIdentity(false);return {supabase:x.supabase,session:x.session,profile:{...x.profile}};},state:()=>({open:state.open,ready:state.ready,online:state.onlineIds.size,profile:state.profile?{id:state.profile.id,displayName:state.profile.display_name,role:state.profile.role}:null})});
+  window.BlobbyChat=Object.freeze({open:openChat,close:closeChat,toggle:toggleChat,backend:async()=>{const x=await ensureIdentity(false);return {supabase:x.supabase,session:x.session,profile:{...x.profile}};},profiles:()=>[...state.profiles.values()].map(p=>({...p})),upsertProfile:p=>{if(p?.id)state.profiles.set(p.id,{...(state.profiles.get(p.id)||{}),...p});},state:()=>({open:state.open,ready:state.ready,online:state.onlineIds.size,profile:state.profile?{id:state.profile.id,displayName:state.profile.display_name,role:state.profile.role}:null})});
 })();

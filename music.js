@@ -534,8 +534,11 @@
     renderNowPlaying();
     renderPlayerControls();
 
-    progressTimer = window.setInterval(updateProgress, 500);
+    // Progress updates are started only while the Music panel is visible.
   }
+
+  function startProgressTimer(){if(progressTimer)return;progressTimer=window.setInterval(()=>{if(!state.open||document.hidden)return;updateProgress();},800);}
+  function stopProgressTimer(){if(progressTimer){clearInterval(progressTimer);progressTimer=0;}}
 
   function setView(view) {
     if (!['search', 'library', 'local'].includes(view)) view = 'search';
@@ -1423,6 +1426,7 @@
 
   function open() {
     if (document.body.dataset.licenseState !== 'unlocked') return;
+    if (!ui.root) build();
 
     if (window.BlobbyChat?.state?.().open) window.BlobbyChat.close();
     if (window.BlobbyDM?.state?.().open) window.BlobbyDM.close();
@@ -1435,6 +1439,7 @@
     ui.shell.setAttribute('aria-hidden', 'false');
     document.documentElement.dataset.musicOpen = 'true';
     appExpand();
+    startProgressTimer();
 
     if (state.view === 'search') {
       setTimeout(() => ui.search?.focus?.(), 80);
@@ -1448,6 +1453,7 @@
     ui.root.dataset.open = 'false';
     ui.shell.setAttribute('aria-hidden', 'true');
     delete document.documentElement.dataset.musicOpen;
+    stopProgressTimer();
     appRestore();
   }
 
@@ -1455,22 +1461,13 @@
     searchAbort?.abort?.();
     destroyHls();
 
-    if (progressTimer) {
-      clearInterval(progressTimer);
-      progressTimer = 0;
-    }
+    stopProgressTimer();
 
     state.localFiles.forEach(t => {
       if (t.blobUrl) {
         try { URL.revokeObjectURL(t.blobUrl); } catch {}
       }
     });
-  }
-
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', build, { once: true });
-  } else {
-    build();
   }
 
   window.addEventListener('beforeunload', destroy);
