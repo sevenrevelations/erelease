@@ -116,6 +116,52 @@
   }
 }
 
+
+/* Stage 12.4 — touchscreen desktop correction.
+   Older chat.css treats every coarse-pointer device as mobile. Windows
+   touch laptops therefore hide the channel/member rails even at desktop
+   widths. Restore them based on viewport width, not pointer type. */
+@media (min-width:1041px){
+  .blobby-chat-channels{
+    display:flex!important;
+  }
+  .blobby-chat-members{
+    display:grid!important;
+  }
+  .blobby-chat-workspace{
+    grid-template-columns:180px minmax(0,1fr) 190px!important;
+  }
+  .blobby-chat-core{
+    min-width:0!important;
+    width:auto!important;
+  }
+  .blobby-chat-popover{
+    right:200px!important;
+  }
+  .blobby-chat-jump,
+  .blobby-chat-toast-stack{
+    right:200px!important;
+  }
+}
+
+@media (max-width:1040px) and (min-width:721px){
+  .blobby-chat-channels{
+    display:flex!important;
+  }
+  .blobby-chat-members{
+    display:none!important;
+  }
+  .blobby-chat-core{
+    min-width:0!important;
+    width:auto!important;
+  }
+  .blobby-chat-popover,
+  .blobby-chat-jump,
+  .blobby-chat-toast-stack{
+    right:14px!important;
+  }
+}
+
 /* Mobile ONLY by viewport width.
    We intentionally do not use pointer:coarse because many Windows
    touchscreen laptops report a coarse pointer on a desktop-sized screen. */
