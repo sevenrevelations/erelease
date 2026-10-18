@@ -8,6 +8,7 @@
   const textDecoder=new TextDecoder('utf-8');
   let dbPromise=null, root=null, panel=null, list=null, stats=null, runtimeBadge=null, shieldCopy=null, fileInput=null, toastNode=null, ready=false, openState=false, runtimeReady=false, toastTimer=0;
   let records=[];
+  let runtimePingAttempts=0;
 
   const $=(s,p=document)=>p.querySelector(s);
   const el=(tag,cls,text)=>{const n=document.createElement(tag);if(cls)n.className=cls;if(text!==undefined)n.textContent=text;return n;};
@@ -57,7 +58,7 @@
     hero.append(el('div','blobby-extension-hero-icon','◆'));
     const heroCopy=el('div','blobby-extension-hero-copy');shieldCopy=el('span','', 'Built-in ad blocking switch. Connect the App Inventor runtime to filter pages in WebViewer_Browser.');heroCopy.append(el('strong','', 'Blobby Shield'),shieldCopy);
     const shieldSwitch=switchControl(settings.adblock,async checked=>{
-      settings.adblock=checked;saveSettings();syncNative();renderStats();window.dispatchEvent(new CustomEvent('blobby:adblock-change',{detail:{enabled:checked}}));toast(`Blobby Shield ${checked?'enabled':'disabled'}.`);
+      settings.adblock=checked;saveSettings();syncNative(true);renderStats();window.dispatchEvent(new CustomEvent('blobby:adblock-change',{detail:{enabled:checked}}));toast(`Blobby Shield ${checked?'enabled':'disabled'}.`);
     },'Toggle Blobby Shield');
     hero.append(heroCopy,shieldSwitch);content.append(hero);
 
@@ -80,9 +81,10 @@
       if(command==='EXTENSION_RUNTIME'){
         runtimeReady=String(payload||'').toUpperCase()==='READY';
         renderRuntime();
-        if(runtimeReady)syncNative();
+        if(runtimeReady)syncNative(false);
       }
     });
+    setTimeout(pingRuntime,180);
     refresh();
   }
 
@@ -243,13 +245,23 @@
   function formatBytes(n){n=Number(n)||0;if(n<1024)return `${n} B`;if(n<1024*1024)return `${(n/1024).toFixed(1)} KB`;return `${(n/1024/1024).toFixed(1)} MB`;}
   async function sha256Hex(data){const buffer=data instanceof ArrayBuffer?data:data.buffer.slice(data.byteOffset,data.byteOffset+data.byteLength);const hash=await crypto.subtle.digest('SHA-256',buffer);return [...new Uint8Array(hash)].map(x=>x.toString(16).padStart(2,'0')).join('');}
 
-  function syncNative(){
+  function syncNative(reloadAdblock=false){
     const payload={version:1,adblock:!!settings.adblock,extensions:records.filter(x=>x.enabled).map(x=>({id:x.id,name:x.name,version:x.version,manifest:x.manifest}))};
     window.dispatchEvent(new CustomEvent('blobby:extensions-config',{detail:payload}));
     if(runtimeReady&&window.BlobbyBridge?.send){
-      try{window.BlobbyBridge.send('ADBLOCK',settings.adblock?'1':'0');const json=JSON.stringify(payload);if(json.length<12000)window.BlobbyBridge.send('EXTENSIONS_SYNC',encodeURIComponent(json));}
+      try{
+        window.BlobbyBridge.send(reloadAdblock?'ADBLOCK':'ADBLOCK_STATE',settings.adblock?'1':'0');
+        const json=JSON.stringify(payload);if(json.length<12000)window.BlobbyBridge.send('EXTENSIONS_SYNC',encodeURIComponent(json));
+      }
       catch(err){console.warn('Extension runtime sync failed',err);}
     }
+  }
+
+  function pingRuntime(){
+    if(runtimeReady||runtimePingAttempts>=5||!window.BlobbyBridge?.isAppInventor?.()||!window.BlobbyBridge?.send)return;
+    runtimePingAttempts+=1;
+    try{window.BlobbyBridge.send('EXTENSION_PING');}catch{}
+    if(!runtimeReady)setTimeout(pingRuntime,450+runtimePingAttempts*250);
   }
 
   function toast(message,kind='info'){
@@ -262,7 +274,7 @@
   async function listInstalled(){build();await refresh();return records.map(({packageBlob,iconData,...x})=>x);}
   async function getPackage(id){const db=await openDB();return new Promise((resolve,reject)=>{const req=db.transaction(STORE,'readonly').objectStore(STORE).get(id);req.onsuccess=()=>resolve(req.result||null);req.onerror=()=>reject(req.error);});}
 
-  window.BlobbyExtensions=Object.freeze({open,close,state,refresh,listInstalled,getPackage,setAdblock(enabled){settings.adblock=!!enabled;saveSettings();render();syncNative();}});
+  window.BlobbyExtensions=Object.freeze({open,close,state,refresh,listInstalled,getPackage,setAdblock(enabled){settings.adblock=!!enabled;saveSettings();render();syncNative(true);}});
   window.addEventListener('blobby:app-ready',build,{once:true});
   window.addEventListener('blobby:license-unlocked',()=>{if(window.BlobbyAppUI)build();});
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>{if(document.body?.dataset.licenseState==='unlocked'&&window.BlobbyAppUI)build();},{once:true});else if(document.body?.dataset.licenseState==='unlocked'&&window.BlobbyAppUI)build();
