@@ -354,3 +354,13 @@ html[data-performance="true"] .blobby-chat-panel,html[data-performance="true"] .
 .blobby-chat-window-note{margin:4px auto 10px;padding:5px 9px;border-radius:999px;background:rgba(255,255,255,.05);color:var(--muted,#91a49a);font-size:10px;width:max-content;max-width:90%}
 :root[data-performance="true"] .blobby-chat-typing-dots i,
 :root[data-low-end="true"] .blobby-chat-typing-dots i{animation:none!important}
+
+/* Stage 14.1 — lightweight owner-only announcements */
+.blobby-chat-announcement-lock{display:flex;align-items:center;gap:7px;min-height:44px;padding:9px 11px;border:1px solid color-mix(in srgb,var(--accent) 18%,var(--line));border-radius:12px;background:color-mix(in srgb,var(--accent) 5%,var(--panel2));color:var(--muted);font-size:10px;line-height:1.35}
+.blobby-chat-announcement-lock[hidden]{display:none!important}.blobby-chat-announcement-lock b{color:var(--ink);font-size:10px}.blobby-chat-announcement-lock span{min-width:0}
+.blobby-chat-announcement{border-left:2px solid color-mix(in srgb,var(--accent) 72%,transparent);padding-left:7px}.blobby-chat-announcement-tag{display:inline-flex;align-items:center;height:16px;padding:0 5px;border-radius:999px;background:color-mix(in srgb,var(--accent) 12%,transparent);color:var(--accent);font-size:7px;font-weight:900;letter-spacing:.08em}
+.blobby-chat-composer[data-channel="announcements"] .blobby-chat-input-wrap{border-color:color-mix(in srgb,var(--accent) 24%,var(--line))}
+html[data-performance="true"] .blobby-chat-announcement-lock,html[data-low-end="true"] .blobby-chat-announcement-lock{background:var(--panel2);border-color:var(--line)}
+.blobby-chat-mobile-channel{display:none;min-width:0;height:27px;border:1px solid var(--line);border-radius:8px;background:var(--panel2);color:var(--ink);padding:0 7px;font:inherit;font-size:10px;font-weight:800}
+@media (max-width:899px){.blobby-chat-mobile-channel{display:block}.blobby-chat-roombar{gap:7px}.blobby-chat-room-description{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}}
+@media (max-width:599px){.blobby-chat-roombar .blobby-chat-room-description{display:none}.blobby-chat-mobile-channel{max-width:180px}}

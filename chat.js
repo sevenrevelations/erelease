@@ -4,6 +4,7 @@
   if (CONFIG.CHAT_ENABLED === false) return;
 
   const GENERAL_ROOM_ID = CONFIG.CHAT_GENERAL_ROOM_ID || '00000000-0000-0000-0000-000000000001';
+  const ANNOUNCEMENT_LIMIT = 60;
   const PREF_KEY = 'blobby.chat.prefs.v1';
   const READ_KEY = 'blobby.chat.lastread.v1';
   const MAX_IMAGE_BYTES = Math.max(1, Number(CONFIG.CHAT_MAX_IMAGE_MB || 5)) * 1024 * 1024;
@@ -26,6 +27,7 @@
   const state = {
     open:false, peek:false, hoverOpened:false, ready:false, identityReady:false, connecting:false, connected:false,
     supabase:null, session:null, profile:null, profiles:new Map(), messages:[], reactions:new Map(), historyMode:false,
+    activeChannel:'general', announcements:[], announcementsLoaded:false, announcementsLoading:false,
     channel:null, unsubscribePromise:null, onlineIds:new Set(), typing:new Map(), typingTimer:0, typingSent:false,
     replyTo:null, unread:0, lastReadAt:readJSON(READ_KEY, 0) || 0, oldestLoadedAt:null,
     loadingOlder:false, hasMore:true, signedUrls:new Map(), avatarUrls:new Map(), blocked:new Set(),
@@ -45,6 +47,7 @@
   function isReduced(){ return state.prefs.reducedMotion || document.documentElement.dataset.reduced==='true' || matchMedia('(prefers-reduced-motion: reduce)').matches; }
   function currentProfileId(){ return state.profile?.id || ''; }
   function isMod(){ return ['owner','admin','moderator'].includes(state.profile?.role); }
+  function isOwner(){ return state.profile?.role==='owner'; }
   function isOwnerProfile(p){ return p?.role==='owner'; }
   function humanBytes(bytes){ const n=Number(bytes)||0; if(n<1024)return `${n} B`; if(n<1024*1024)return `${(n/1024).toFixed(n<10240?1:0)} KB`; return `${(n/1024/1024).toFixed(1)} MB`; }
   function timeLabel(v){ const d=new Date(v); return d.toLocaleTimeString([], {hour:'numeric',minute:'2-digit'}); }
@@ -87,9 +90,8 @@
 
             <div class="blobby-chat-channel-group">
               <small>CHANNELS</small>
-              <button class="blobby-chat-channel active" type="button"><b>#</b><span>general</span></button>
-              <button class="blobby-chat-channel" type="button" disabled><b>📣</b><span>announcements</span><em>Soon</em></button>
-              <button class="blobby-chat-channel" type="button" disabled><b>🎵</b><span>share-music</span><em>Soon</em></button>
+              <button class="blobby-chat-channel chat-channel-general active" type="button" data-channel="general"><b>#</b><span>general</span></button>
+              <button class="blobby-chat-channel chat-channel-announcements" type="button" data-channel="announcements"><b>📣</b><span>announcements</span><em>Owner only</em></button>
             </div>
 
             <div class="blobby-chat-channel-group">
@@ -111,7 +113,7 @@
             <header class="blobby-chat-head">
               <div class="blobby-chat-title">
                 <div class="blobby-chat-title-copy">
-                  <strong><span class="blobby-chat-hash">#</span> general</strong>
+                  <strong><span class="blobby-chat-hash chat-room-icon">#</span> <span class="chat-room-name">general</span></strong>
                   <span class="blobby-chat-connection">Not connected</span>
                 </div>
               </div>
@@ -123,15 +125,20 @@
             </header>
 
             <div class="blobby-chat-roombar">
+              <select class="blobby-chat-mobile-channel" aria-label="Choose chat channel">
+                <option value="general"># general</option>
+                <option value="announcements">📣 announcements</option>
+              </select>
               <div class="blobby-chat-room-description">The main Blobby community room</div>
-              <span>Be respectful • no spam</span>
+              <span class="blobby-chat-room-note">Be respectful • no spam</span>
             </div>
 
             <div class="blobby-chat-messages" role="log" aria-live="polite" aria-relevant="additions"><div class="blobby-chat-loading">Open chat to connect…</div></div>
             <div class="blobby-chat-typing" aria-live="polite"></div>
 
-            <div class="blobby-chat-composer">
+            <div class="blobby-chat-composer" data-channel="general">
               <div class="blobby-chat-replying" hidden><span></span><button type="button" aria-label="Cancel reply">×</button></div>
+              <div class="blobby-chat-announcement-lock" hidden><b>📣 Announcements are read-only.</b><span>Only the Blobby Owner can post here.</span></div>
               <div class="blobby-chat-input-wrap"><textarea class="blobby-chat-input" rows="1" maxlength="2000" placeholder="Message #general…" aria-label="Message general chat"></textarea><button class="blobby-chat-send" type="button" disabled>Send</button></div>
               <div class="blobby-chat-tools"><button class="blobby-chat-tool chat-emoji" type="button" title="Emoji">😀</button><button class="blobby-chat-tool chat-attach" type="button" title="Attach file">📎</button><button class="blobby-chat-tool chat-photo" type="button" title="Attach photo">📷</button><span class="blobby-chat-upload-state"></span><span class="blobby-chat-upload-progress" hidden><i></i></span></div>
               <input class="chat-file-input" type="file" hidden accept=".pdf,.txt,.csv,.docx,.xlsx,.pptx,image/jpeg,image/png,image/webp">
@@ -179,6 +186,7 @@
       settingsFlyout:q('.chat-settings-flyout',root),onlineFlyout:q('.chat-online-flyout',root),onlineList:q('.chat-online-list',root),jump:q('.blobby-chat-jump',root),
       memberList:q('.blobby-chat-members-list',root),memberCount:q('.blobby-chat-members-count',root),
       selfAvatar:q('.blobby-chat-self-avatar',root),selfName:q('.blobby-chat-self-copy strong',root),selfStatus:q('.blobby-chat-self-copy small',root),
+      generalChannel:q('.chat-channel-general',root),announcementsChannel:q('.chat-channel-announcements',root),mobileChannel:q('.blobby-chat-mobile-channel',root),roomIcon:q('.chat-room-icon',root),roomName:q('.chat-room-name',root),roomDescription:q('.blobby-chat-room-description',root),roomNote:q('.blobby-chat-room-note',root),composer:q('.blobby-chat-composer',root),inputWrap:q('.blobby-chat-input-wrap',root),tools:q('.blobby-chat-tools',root),announcementLock:q('.blobby-chat-announcement-lock',root),
       editProfile:q('.chat-edit-profile',root),sounds:q('.chat-sounds',root),compact:q('.chat-compact',root),reduced:q('.chat-reduced',root),saveSettings:q('.chat-save-settings',root),settingsError:q('.chat-settings-error',root),
       toasts:q('.blobby-chat-toast-stack',root),lightbox:q('.blobby-chat-lightbox',root),lightboxImg:q('.blobby-chat-lightbox img',root)
     };
@@ -189,6 +197,9 @@
     root.querySelectorAll('.chat-open-profile').forEach(b=>b.onclick=()=>window.BlobbyFeatures?.open?.('profile').catch?.(console.warn));
     q('.chat-open-dms',root).onclick=()=>{closeChat();setTimeout(()=>window.BlobbyFeatures?.open?.('dm').catch?.(console.warn),40);};
     q('.chat-open-groups',root).onclick=()=>{closeChat();setTimeout(()=>window.BlobbyFeatures?.open?.('group').catch?.(console.warn),40);};
+    ui.generalChannel.onclick=()=>switchChannel('general');
+    ui.announcementsChannel.onclick=()=>switchChannel('announcements');
+    ui.mobileChannel.onchange=()=>switchChannel(ui.mobileChannel.value);
 
     ui.panel.inert=true;
     ui.panel.style.pointerEvents='none';
@@ -235,6 +246,87 @@
     });
   }
 
+  async function switchChannel(channel){
+    if(channel!=='general'&&channel!=='announcements')return;
+    if(state.activeChannel===channel){configureChannelUI();return;}
+    sendTypingStop();clearTimeout(state.typingRenderTimer);state.typing.clear();ui.typing.textContent='';setReply(null);
+    state.activeChannel=channel;state.historyMode=false;ui.jump.hidden=true;configureChannelUI();
+    if(channel==='announcements'){
+      try{await ensureIdentity(false);await loadAnnouncements(!state.announcementsLoaded);renderAnnouncements();requestAnimationFrame(()=>scrollBottom(false));}
+      catch(err){console.warn('Announcements unavailable',err);ui.messages.replaceChildren(el('div','blobby-chat-empty','Announcements are unavailable right now.'));}
+    }else{
+      if(!state.ready)await ensureConnected();
+      renderMessages();requestAnimationFrame(()=>scrollBottom(false));
+    }
+  }
+
+  function configureChannelUI(){
+    const announcements=state.activeChannel==='announcements';
+    ui.generalChannel.classList.toggle('active',!announcements);
+    ui.announcementsChannel.classList.toggle('active',announcements);
+    ui.mobileChannel.value=announcements?'announcements':'general';
+    ui.roomIcon.textContent=announcements?'📣':'#';
+    ui.roomName.textContent=announcements?'announcements':'general';
+    ui.roomDescription.textContent=announcements?'Official updates from Blobby':'The main Blobby community room';
+    ui.roomNote.textContent=announcements?'Everyone can read • Owner posts only':'Be respectful • no spam';
+    ui.composer.dataset.channel=announcements?'announcements':'general';
+    ui.replying.hidden=true;
+    if(announcements&&!isOwner()){
+      ui.announcementLock.hidden=false;ui.inputWrap.hidden=true;ui.tools.hidden=true;ui.input.disabled=true;ui.send.disabled=true;
+    }else{
+      ui.announcementLock.hidden=true;ui.inputWrap.hidden=false;ui.tools.hidden=false;ui.input.disabled=false;
+      ui.attachButton.hidden=announcements;ui.photoButton.hidden=announcements;
+      ui.input.placeholder=announcements?'Post an announcement…':'Message #general…';
+      ui.input.setAttribute('aria-label',announcements?'Post an announcement':'Message general chat');
+      ui.send.textContent=announcements?'Post':'Send';syncSend();
+    }
+    if(!announcements){ui.attachButton.hidden=false;ui.photoButton.hidden=false;}
+  }
+
+  async function loadAnnouncements(force=false){
+    if(state.announcementsLoading||(!force&&state.announcementsLoaded))return;
+    state.announcementsLoading=true;
+    if(!state.announcementsLoaded)ui.messages.replaceChildren(el('div','blobby-chat-loading','Loading announcements…'));
+    try{
+      const {data,error}=await state.supabase.from('chat_announcements').select('id,sender_profile_id,body,created_at,updated_at,edited_at').order('created_at',{ascending:false}).limit(ANNOUNCEMENT_LIMIT);
+      if(error)throw error;
+      state.announcements=(data||[]).reverse();state.announcementsLoaded=true;
+      await loadProfilesForMessages(state.announcements);
+    }finally{state.announcementsLoading=false;}
+  }
+
+  function renderAnnouncements(){
+    if(state.activeChannel!=='announcements'||!ui.messages)return;
+    ui.messages.replaceChildren();
+    if(!state.announcementsLoaded){ui.messages.append(el('div','blobby-chat-loading','Loading announcements…'));return;}
+    if(!state.announcements.length){ui.messages.append(el('div','blobby-chat-empty',isOwner()?'No announcements yet. Post the first update below.':'No announcements yet.'));return;}
+    let lastDay='';
+    for(const a of state.announcements){const dk=dayKey(a.created_at);if(dk!==lastDay){ui.messages.append(el('div','blobby-chat-day',dayLabel(a.created_at)));lastDay=dk;}ui.messages.append(announcementNode(a));}
+  }
+
+  function announcementNode(a){
+    const p=state.profiles.get(a.sender_profile_id)||{id:a.sender_profile_id,display_name:'Blobby Owner',role:'owner'};
+    const row=el('article','blobby-chat-msg blobby-chat-announcement');row.dataset.messageId=a.id;row.dataset.own=String(a.sender_profile_id===currentProfileId());
+    row.append(avatarNode(p));
+    const main=el('div','blobby-chat-msg-main');const head=el('div','blobby-chat-msg-head');appendIdentity(head,p);head.append(el('span','blobby-chat-announcement-tag','ANNOUNCEMENT'),el('time','blobby-chat-time',timeLabel(a.created_at)));if(a.edited_at)head.append(el('span','blobby-chat-edited','edited'));main.append(head,bodyNode(a.body));
+    if(isOwner()){
+      const actions=el('div','blobby-chat-msg-actions');const edit=el('button','blobby-chat-mini-btn','Edit');edit.type='button';edit.onclick=()=>editAnnouncement(a);const del=el('button','blobby-chat-mini-btn','Delete');del.type='button';del.onclick=()=>deleteAnnouncement(a);actions.append(edit,del);main.append(actions);
+    }
+    row.append(main);return row;
+  }
+
+  async function postAnnouncement(body){
+    if(!isOwner())throw Error('Only the Owner can post announcements.');
+    const {error}=await state.supabase.rpc('chat_post_announcement',{p_body:body});if(error)throw error;
+  }
+  async function editAnnouncement(a){
+    if(!isOwner())return;const next=prompt('Edit announcement:',a.body||'');if(next===null)return;const body=next.trim();if(!body)return;
+    const {error}=await state.supabase.rpc('chat_edit_announcement',{p_announcement_id:a.id,p_body:body});if(error)toast('Could not edit announcement.');
+  }
+  async function deleteAnnouncement(a){
+    if(!isOwner()||!confirm('Delete this announcement?'))return;const {error}=await state.supabase.rpc('chat_delete_announcement',{p_announcement_id:a.id});if(error)toast('Could not delete announcement.');
+  }
+
   function observeThemeState(){
     const obs=new MutationObserver(()=>syncRootFlags());
     obs.observe(document.documentElement,{attributes:true,attributeFilter:['data-performance','data-reduced','data-animations','data-glass']});
@@ -262,6 +354,8 @@
     appExpand();
 
     await ensureConnected();
+    configureChannelUI();
+    if(state.activeChannel==='announcements'){await loadAnnouncements(!state.announcementsLoaded);renderAnnouncements();}
     markRead();
     setTimeout(()=>ui.input.focus(),isReduced()?0:220);
   }
@@ -330,7 +424,7 @@
       if(!state.profilesLoadedAt||Date.now()-state.profilesLoadedAt>120000)await loadProfiles();
       await loadMessages(true);
       await subscribeRealtime();
-      state.ready=true; state.connected=true; setConnection('connected','Connected'); renderMessages(); renderOnline();
+      state.ready=true; state.connected=true; setConnection('connected','Connected'); if(state.activeChannel==='general')renderMessages();else{await loadAnnouncements(!state.announcementsLoaded);renderAnnouncements();} renderOnline(); configureChannelUI();
     }catch(err){
       console.warn('Blobby Chat connection failed',err); setConnection(navigator.onLine?'offline':'offline',err.message||'Chat unavailable');
       ui.messages.replaceChildren(el('div','blobby-chat-empty',err.message||'Chat is unavailable right now.'));
@@ -397,10 +491,19 @@
     const key=currentProfileId()||state.session?.user?.id||crypto.randomUUID();
     const ch=state.supabase.channel('blobby-general',{config:{presence:{key},broadcast:{self:false}}});
     ch.on('postgres_changes',{event:'INSERT',schema:'public',table:'chat_messages',filter:`room_id=eq.${GENERAL_ROOM_ID}`},async payload=>{
-      const m=payload.new; if(state.messages.some(x=>x.id===m.id))return; state.messages.push(m); await loadProfilesForMessages([m]); renderMessages(); handleIncoming(m);
+      const m=payload.new; if(state.messages.some(x=>x.id===m.id))return; state.messages.push(m); await loadProfilesForMessages([m]); if(state.activeChannel==='general')renderMessages(); handleIncoming(m);
     });
     ch.on('postgres_changes',{event:'UPDATE',schema:'public',table:'chat_messages',filter:`room_id=eq.${GENERAL_ROOM_ID}`},payload=>{
-      const i=state.messages.findIndex(x=>x.id===payload.new.id); if(i>=0){state.messages[i]=payload.new;renderMessages({preserveScroll:true});}
+      const i=state.messages.findIndex(x=>x.id===payload.new.id); if(i>=0){state.messages[i]=payload.new;if(state.activeChannel==='general')renderMessages({preserveScroll:true});}
+    });
+    ch.on('postgres_changes',{event:'INSERT',schema:'public',table:'chat_announcements'},async payload=>{
+      const a=payload.new;if(state.announcements.some(x=>x.id===a.id))return;state.announcements.push(a);state.announcements=state.announcements.slice(-ANNOUNCEMENT_LIMIT);state.announcementsLoaded=true;await loadProfilesForMessages([a]);if(state.activeChannel==='announcements'){renderAnnouncements();requestAnimationFrame(()=>scrollBottom(true));}else if(state.open)toast('📣 New announcement posted.');
+    });
+    ch.on('postgres_changes',{event:'UPDATE',schema:'public',table:'chat_announcements'},payload=>{
+      const i=state.announcements.findIndex(x=>x.id===payload.new.id);if(i>=0){state.announcements[i]=payload.new;if(state.activeChannel==='announcements')renderAnnouncements();}
+    });
+    ch.on('postgres_changes',{event:'DELETE',schema:'public',table:'chat_announcements'},payload=>{
+      const id=payload.old?.id;if(!id)return;state.announcements=state.announcements.filter(x=>x.id!==id);if(state.activeChannel==='announcements')renderAnnouncements();
     });
     ch.on('postgres_changes',{event:'*',schema:'public',table:'chat_reactions'},()=>scheduleReactionRefresh());
     ch.on('postgres_changes',{event:'UPDATE',schema:'public',table:'chat_profiles'},payload=>{
@@ -432,13 +535,14 @@
   }
 
   function sendTyping(){
-    if(!state.channel||!state.connected)return;
+    if(state.activeChannel!=='general'||!state.channel||!state.connected)return;
     clearTimeout(state.typingTimer);
     if(!state.typingSent){state.typingSent=true;state.channel.send({type:'broadcast',event:'typing',payload:{profile_id:currentProfileId(),typing:true}});}
     state.typingTimer=setTimeout(()=>{state.typingSent=false;state.channel?.send({type:'broadcast',event:'typing',payload:{profile_id:currentProfileId(),typing:false}});},2200);
   }
 
   function renderTyping(){
+    if(state.activeChannel!=='general'){ui.typing.textContent='';return;}
     const now=Date.now(); for(const [id,until] of state.typing)if(until<now)state.typing.delete(id);
     const names=[...state.typing.keys()].map(id=>state.profiles.get(id)?.display_name).filter(Boolean).slice(0,3);
     if(!names.length){ui.typing.textContent='';return;}
@@ -524,7 +628,7 @@
   function statusLabel(s){return s==='away'?'Away':s==='dnd'?'Do Not Disturb':'Online';}
 
   function renderMessages({preserveScroll=false}={}){
-    if(!ui.messages)return;
+    if(state.activeChannel!=='general'||!ui.messages)return;
     const oldHeight=ui.messages.scrollHeight, oldTop=ui.messages.scrollTop, nearBottom=isNearBottom();
     ui.messages.replaceChildren();
     if(state.hasMore&&state.messages.length){const older=el('button','blobby-chat-mini-btn','Load older messages');older.style.display='block';older.style.margin='0 auto 8px';older.onclick=loadOlder;ui.messages.append(older);}
@@ -658,16 +762,20 @@
     const box=el('div','blobby-chat-reactions'); for(const [emoji,rows] of grouped){const b=el('button','blobby-chat-reaction',`${emoji} ${rows.length}`);b.type='button';b.dataset.mine=String(rows.some(r=>r.profile_id===currentProfileId()));b.onclick=()=>toggleReaction(m,emoji);box.append(b);}return box;
   }
 
-  async function loadOlder(){if(state.loadingOlder||!state.hasMore)return;state.loadingOlder=true;const oldHeight=ui.messages.scrollHeight;try{state.historyMode=true;await loadMessages(false);renderMessages({preserveScroll:true});ui.messages.scrollTop=ui.messages.scrollHeight-oldHeight;ui.jump.hidden=false;ui.jump.textContent='↓ Back to latest';}catch(e){toast('Could not load older messages.');}finally{state.loadingOlder=false;}}
-  function onMessagesScroll(){state.lastScrollNearBottom=isNearBottom(); if(ui.messages.scrollTop<80&&state.hasMore&&!state.loadingOlder)loadOlder(); if(isNearBottom()&&!state.historyMode){ui.jump.hidden=true;if(state.open)markRead();}}
+  async function loadOlder(){if(state.activeChannel!=='general'||state.loadingOlder||!state.hasMore)return;state.loadingOlder=true;const oldHeight=ui.messages.scrollHeight;try{state.historyMode=true;await loadMessages(false);renderMessages({preserveScroll:true});ui.messages.scrollTop=ui.messages.scrollHeight-oldHeight;ui.jump.hidden=false;ui.jump.textContent='↓ Back to latest';}catch(e){toast('Could not load older messages.');}finally{state.loadingOlder=false;}}
+  function onMessagesScroll(){state.lastScrollNearBottom=isNearBottom();if(state.activeChannel!=='general')return; if(ui.messages.scrollTop<80&&state.hasMore&&!state.loadingOlder)loadOlder(); if(isNearBottom()&&!state.historyMode){ui.jump.hidden=true;if(state.open)markRead();}}
   function isNearBottom(){return ui.messages.scrollHeight-ui.messages.scrollTop-ui.messages.clientHeight<90;}
   function scrollBottom(smooth=true){ui.messages.scrollTo({top:ui.messages.scrollHeight,behavior:(smooth&&!isReduced())?'smooth':'auto'});}
   function scrollToMessage(id){const n=ui.messages.querySelector(`[data-message-id="${CSS.escape(id)}"]`);if(n)n.scrollIntoView({block:'center',behavior:isReduced()?'auto':'smooth'});}
 
   async function sendText(){
     const body=ui.input.value.trim(); if(!body||!state.ready)return; ui.send.disabled=true;
-    try{await insertMessage({body,message_type:'text',reply_to:state.replyTo?.id||null});ui.input.value='';autoGrowInput();setReply(null);sendTypingStop();}
-    catch(e){toast(friendlyDbError(e));}finally{syncSend();}
+    try{
+      if(state.activeChannel==='announcements')await postAnnouncement(body);
+      else await insertMessage({body,message_type:'text',reply_to:state.replyTo?.id||null});
+      ui.input.value='';autoGrowInput();setReply(null);sendTypingStop();
+    }
+    catch(e){toast(state.activeChannel==='announcements'?(isOwner()?'Announcement could not be posted.':'Only the Owner can post announcements.'):friendlyDbError(e));}finally{syncSend();}
   }
   async function insertMessage(payload){
     if(!state.profile)throw Error('Chat profile unavailable.'); const row={room_id:GENERAL_ROOM_ID,sender_profile_id:currentProfileId(),body:payload.body||null,message_type:payload.message_type||'text',gif_url:payload.gif_url||null,attachment_path:payload.attachment_path||null,attachment_name:payload.attachment_name||null,attachment_mime:payload.attachment_mime||null,attachment_size:payload.attachment_size||null,reply_to:payload.reply_to||null};
@@ -689,6 +797,7 @@
 
 
   async function uploadAndSend(file,photoOnly){
+    if(state.activeChannel==='announcements')return toast('Announcements are text-only.');
     if(!state.ready)return toast('Chat is still connecting.');
     const isImage=ALLOWED_IMAGE_TYPES.has(file.type);const ext=extOf(file.name);
     if(photoOnly&&!isImage)return toast('Choose a JPG, PNG, or WEBP image.');
@@ -712,18 +821,19 @@
     toast('Chat settings saved.');closeFlyouts();
   }
 
-  const scheduleReactionRefresh=debounce(async()=>{if(!state.open||!state.ready)return;try{await loadReactions();renderMessages({preserveScroll:true});}catch{}},160);
-  function scheduleProfileRender(){clearTimeout(state.profileRenderTimer);state.profileRenderTimer=setTimeout(()=>{if(!state.open)return;renderMessages({preserveScroll:true});renderOnline();renderSelfCard();fillSettings();},90);}
+  const scheduleReactionRefresh=debounce(async()=>{if(!state.open||!state.ready||state.activeChannel!=='general')return;try{await loadReactions();renderMessages({preserveScroll:true});}catch{}},160);
+  function scheduleProfileRender(){clearTimeout(state.profileRenderTimer);state.profileRenderTimer=setTimeout(()=>{if(!state.open)return;if(state.activeChannel==='general')renderMessages({preserveScroll:true});else renderAnnouncements();renderOnline();renderSelfCard();fillSettings();configureChannelUI();},90);}
 
   function setConnection(kind,text){if(!ui.connection)return;ui.dot.dataset.state=kind;ui.connection.textContent=text;}
-  function syncSend(){if(ui.send)ui.send.disabled=!ui.input.value.trim()||!state.ready;}
+  function syncSend(){if(!ui.send)return;ui.send.disabled=!ui.input.value.trim()||!state.ready||(state.activeChannel==='announcements'&&!isOwner());}
   function autoGrowInput(){ui.input.style.height='auto';ui.input.style.height=Math.min(108,ui.input.scrollHeight)+'px';}
   function sendTypingStop(){clearTimeout(state.typingTimer);if(state.typingSent){state.typingSent=false;state.channel?.send({type:'broadcast',event:'typing',payload:{profile_id:currentProfileId(),typing:false}});}}
   function debounce(fn,ms){let t=0;return(...args)=>{clearTimeout(t);t=setTimeout(()=>fn(...args),ms);};}
 
   function handleIncoming(m){
-    const own=m.sender_profile_id===currentProfileId(); if(own){if(state.open)scrollBottom(true);return;}
-    if(state.open&&isNearBottom()&&!state.historyMode){scrollBottom(true);markRead();}else{state.unread++;syncUnread();ui.jump.hidden=false;ui.jump.textContent=`↓ ${state.unread} new message${state.unread===1?'':'s'}`;}
+    const own=m.sender_profile_id===currentProfileId(); if(own){if(state.open&&state.activeChannel==='general')scrollBottom(true);return;}
+    if(state.open&&state.activeChannel==='general'&&isNearBottom()&&!state.historyMode){scrollBottom(true);markRead();}
+    else{state.unread++;syncUnread();if(state.activeChannel==='general'){ui.jump.hidden=false;ui.jump.textContent=`↓ ${state.unread} new message${state.unread===1?'':'s'}`;}}
     if(state.prefs.sounds&&!isPerformance())playPing();
   }
   function playPing(){try{const A=window.AudioContext||window.webkitAudioContext;if(!A)return;const ctx=new A(),osc=ctx.createOscillator(),gain=ctx.createGain();osc.frequency.value=620;gain.gain.setValueAtTime(.025,ctx.currentTime);gain.gain.exponentialRampToValueAtTime(.0001,ctx.currentTime+.11);osc.connect(gain).connect(ctx.destination);osc.start();osc.stop(ctx.currentTime+.12);setTimeout(()=>ctx.close(),180);}catch{}}
@@ -731,11 +841,11 @@
   function syncUnread(){if(!ui.unread)return;ui.unread.hidden=state.unread<=0;ui.unread.textContent=state.unread>99?'99+':String(state.unread);}
 
   async function disconnectChat(){
-    state.ready=false;state.identityReady=false;state.connected=false;state.session=null;state.profile=null;state.messages=[];state.profiles.clear();state.onlineIds.clear();await unsubscribeGeneral();setConnection('offline','Access locked');if(state.open)closeChat();
+    state.ready=false;state.identityReady=false;state.connected=false;state.session=null;state.profile=null;state.messages=[];state.announcements=[];state.announcementsLoaded=false;state.profiles.clear();state.onlineIds.clear();await unsubscribeGeneral();setConnection('offline','Access locked');if(state.open)closeChat();
   }
 
   function boot(){createUI();if(document.body.dataset.licenseState==='unlocked')setConnection('offline','Open chat to connect');window.addEventListener('blobby:license-unlocked',()=>setConnection('offline','Open chat to connect'));}
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
 
-  window.BlobbyChat=Object.freeze({open:openChat,close:closeChat,toggle:toggleChat,backend:async()=>{const x=await ensureIdentity(false);return {supabase:x.supabase,session:x.session,profile:{...x.profile}};},profiles:()=>[...state.profiles.values()].map(p=>({...p})),upsertProfile:p=>{if(p?.id)state.profiles.set(p.id,{...(state.profiles.get(p.id)||{}),...p});},state:()=>({open:state.open,ready:state.ready,online:state.onlineIds.size,profile:state.profile?{id:state.profile.id,displayName:state.profile.display_name,role:state.profile.role}:null})});
+  window.BlobbyChat=Object.freeze({open:openChat,close:closeChat,toggle:toggleChat,backend:async()=>{const x=await ensureIdentity(false);return {supabase:x.supabase,session:x.session,profile:{...x.profile}};},profiles:()=>[...state.profiles.values()].map(p=>({...p})),upsertProfile:p=>{if(p?.id)state.profiles.set(p.id,{...(state.profiles.get(p.id)||{}),...p});},state:()=>({open:state.open,ready:state.ready,channel:state.activeChannel,online:state.onlineIds.size,profile:state.profile?{id:state.profile.id,displayName:state.profile.display_name,role:state.profile.role}:null})});
 })();
