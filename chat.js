@@ -138,7 +138,7 @@
 
             <div class="blobby-chat-composer" data-channel="general">
               <div class="blobby-chat-replying" hidden><span></span><button type="button" aria-label="Cancel reply">×</button></div>
-              <div class="blobby-chat-announcement-lock" hidden><b>📣 Announcements are read-only.</b><span>Only the Blobby Owner can post here.</span></div>
+              <div class="blobby-chat-announcement-lock" hidden><b>📣 Announcements are posting-locked.</b><span>Only the Blobby Owner can post. Everyone else can react only.</span></div>
               <div class="blobby-chat-input-wrap"><textarea class="blobby-chat-input" rows="1" maxlength="2000" placeholder="Message #general…" aria-label="Message general chat"></textarea><button class="blobby-chat-send" type="button" disabled>Send</button></div>
               <div class="blobby-chat-tools"><button class="blobby-chat-tool chat-emoji" type="button" title="Emoji">😀</button><button class="blobby-chat-tool chat-attach" type="button" title="Attach file">📎</button><button class="blobby-chat-tool chat-photo" type="button" title="Attach photo">📷</button><span class="blobby-chat-upload-state"></span><span class="blobby-chat-upload-progress" hidden><i></i></span></div>
               <input class="chat-file-input" type="file" hidden accept=".pdf,.txt,.csv,.docx,.xlsx,.pptx,image/jpeg,image/png,image/webp">
@@ -268,7 +268,7 @@
     ui.roomIcon.textContent=announcements?'📣':'#';
     ui.roomName.textContent=announcements?'announcements':'general';
     ui.roomDescription.textContent=announcements?'Official updates from Blobby':'The main Blobby community room';
-    ui.roomNote.textContent=announcements?'Everyone can read • Owner posts only':'Be respectful • no spam';
+    ui.roomNote.textContent=announcements?'Everyone can read • React only • Owner posts only':'Be respectful • no spam';
     ui.composer.dataset.channel=announcements?'announcements':'general';
     ui.replying.hidden=true;
     if(announcements&&!isOwner()){
@@ -292,6 +292,7 @@
       if(error)throw error;
       state.announcements=(data||[]).reverse();state.announcementsLoaded=true;
       await loadProfilesForMessages(state.announcements);
+      await loadReactions();
     }finally{state.announcementsLoading=false;}
   }
 
@@ -309,9 +310,13 @@
     const row=el('article','blobby-chat-msg blobby-chat-announcement');row.dataset.messageId=a.id;row.dataset.own=String(a.sender_profile_id===currentProfileId());
     row.append(avatarNode(p));
     const main=el('div','blobby-chat-msg-main');const head=el('div','blobby-chat-msg-head');appendIdentity(head,p);head.append(el('span','blobby-chat-announcement-tag','ANNOUNCEMENT'),el('time','blobby-chat-time',timeLabel(a.created_at)));if(a.edited_at)head.append(el('span','blobby-chat-edited','edited'));main.append(head,bodyNode(a.body));
+    const reactions=reactionNode(a); if(reactions)main.append(reactions);
+    const actions=el('div','blobby-chat-msg-actions');
+    const react=el('button','blobby-chat-mini-btn','React');react.type='button';react.onclick=()=>quickReaction(a,'announcement');actions.append(react);
     if(isOwner()){
-      const actions=el('div','blobby-chat-msg-actions');const edit=el('button','blobby-chat-mini-btn','Edit');edit.type='button';edit.onclick=()=>editAnnouncement(a);const del=el('button','blobby-chat-mini-btn','Delete');del.type='button';del.onclick=()=>deleteAnnouncement(a);actions.append(edit,del);main.append(actions);
+      const edit=el('button','blobby-chat-mini-btn','Edit');edit.type='button';edit.onclick=()=>editAnnouncement(a);const del=el('button','blobby-chat-mini-btn','Delete');del.type='button';del.onclick=()=>deleteAnnouncement(a);actions.append(edit,del);
     }
+    main.append(actions);
     row.append(main);return row;
   }
 
@@ -473,11 +478,20 @@
   }
 
   async function loadReactions(){
-    const windowMessages=state.historyMode?state.messages.slice(0,MAX_RENDERED_MESSAGES):state.messages.slice(-MAX_RENDERED_MESSAGES);
-    const ids=windowMessages.map(m=>m.id); if(!ids.length){state.reactions.clear();return;}
-    const {data}=await state.supabase.from('chat_reactions').select('message_id,profile_id,emoji').in('message_id',ids);
+    const general=state.activeChannel==='general';
+    const windowItems=general
+      ? (state.historyMode?state.messages.slice(0,MAX_RENDERED_MESSAGES):state.messages.slice(-MAX_RENDERED_MESSAGES))
+      : state.announcements.slice(-ANNOUNCEMENT_LIMIT);
+    const ids=windowItems.map(m=>m.id).filter(Boolean);
     state.reactions.clear();
-    for(const r of data||[]){ if(!state.reactions.has(r.message_id))state.reactions.set(r.message_id,[]); state.reactions.get(r.message_id).push(r); }
+    if(!ids.length)return;
+    if(general){
+      const {data}=await state.supabase.from('chat_reactions').select('message_id,profile_id,emoji').in('message_id',ids);
+      for(const r of data||[]){ if(!state.reactions.has(r.message_id))state.reactions.set(r.message_id,[]); state.reactions.get(r.message_id).push(r); }
+      return;
+    }
+    const {data}=await state.supabase.from('chat_announcement_reactions').select('announcement_id,profile_id,emoji').in('announcement_id',ids);
+    for(const r of data||[]){ if(!state.reactions.has(r.announcement_id))state.reactions.set(r.announcement_id,[]); state.reactions.get(r.announcement_id).push(r); }
   }
 
   async function loadBlocks(){
@@ -506,6 +520,7 @@
       const id=payload.old?.id;if(!id)return;state.announcements=state.announcements.filter(x=>x.id!==id);if(state.activeChannel==='announcements')renderAnnouncements();
     });
     ch.on('postgres_changes',{event:'*',schema:'public',table:'chat_reactions'},()=>scheduleReactionRefresh());
+    ch.on('postgres_changes',{event:'*',schema:'public',table:'chat_announcement_reactions'},()=>scheduleReactionRefresh());
     ch.on('postgres_changes',{event:'UPDATE',schema:'public',table:'chat_profiles'},payload=>{
       if(payload.new?.id){state.profiles.set(payload.new.id,{...(state.profiles.get(payload.new.id)||{}),...payload.new});if(payload.new.id===currentProfileId())state.profile={...state.profile,...payload.new};scheduleProfileRender();}
     });
@@ -759,7 +774,8 @@
 
   function reactionNode(m){
     const list=state.reactions.get(m.id)||[]; if(!list.length)return null; const grouped=new Map(); for(const r of list){if(!grouped.has(r.emoji))grouped.set(r.emoji,[]);grouped.get(r.emoji).push(r);}
-    const box=el('div','blobby-chat-reactions'); for(const [emoji,rows] of grouped){const b=el('button','blobby-chat-reaction',`${emoji} ${rows.length}`);b.type='button';b.dataset.mine=String(rows.some(r=>r.profile_id===currentProfileId()));b.onclick=()=>toggleReaction(m,emoji);box.append(b);}return box;
+    const kind=state.activeChannel==='announcements'?'announcement':'message';
+    const box=el('div','blobby-chat-reactions'); for(const [emoji,rows] of grouped){const b=el('button','blobby-chat-reaction',`${emoji} ${rows.length}`);b.type='button';b.dataset.mine=String(rows.some(r=>r.profile_id===currentProfileId()));b.onclick=()=>toggleReaction(m,emoji,kind);box.append(b);}return box;
   }
 
   async function loadOlder(){if(state.activeChannel!=='general'||state.loadingOlder||!state.hasMore)return;state.loadingOlder=true;const oldHeight=ui.messages.scrollHeight;try{state.historyMode=true;await loadMessages(false);renderMessages({preserveScroll:true});ui.messages.scrollTop=ui.messages.scrollHeight-oldHeight;ui.jump.hidden=false;ui.jump.textContent='↓ Back to latest';}catch(e){toast('Could not load older messages.');}finally{state.loadingOlder=false;}}
@@ -821,7 +837,7 @@
     toast('Chat settings saved.');closeFlyouts();
   }
 
-  const scheduleReactionRefresh=debounce(async()=>{if(!state.open||!state.ready||state.activeChannel!=='general')return;try{await loadReactions();renderMessages({preserveScroll:true});}catch{}},160);
+  const scheduleReactionRefresh=debounce(async()=>{if(!state.open||!state.ready)return;try{await loadReactions();if(state.activeChannel==='general')renderMessages({preserveScroll:true});else if(state.activeChannel==='announcements')renderAnnouncements();}catch{}},160);
   function scheduleProfileRender(){clearTimeout(state.profileRenderTimer);state.profileRenderTimer=setTimeout(()=>{if(!state.open)return;if(state.activeChannel==='general')renderMessages({preserveScroll:true});else renderAnnouncements();renderOnline();renderSelfCard();fillSettings();configureChannelUI();},90);}
 
   function setConnection(kind,text){if(!ui.connection)return;ui.dot.dataset.state=kind;ui.connection.textContent=text;}
