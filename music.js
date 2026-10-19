@@ -1,6 +1,12 @@
 'use strict';
 (() => {
   const API_BASE = 'https://blobby-music-api.onrender.com';
+  const PLAYLIST_DB = 'blobby-music-v3';
+  const PLAYLIST_STORE = 'playlists';
+  const MAX_PLAYLISTS = 30;
+  const MAX_PLAYLIST_TRACKS = 150;
+  const PLAYLIST_RENDER_STEP = 70;
+  const PLAYLIST_ACCENTS = ['#bdfbd7','#87c8ff','#caa8ff','#ff9fbc','#ffd47a','#8ce7d6','#ffad76','#d8e28c'];
 
   const state = {
     open: false,
@@ -21,7 +27,13 @@
     currentTrack: null,
     playbackTrack: null,
     soundcloudResolved: null,
-    localFiles: []
+    localFiles: [],
+    playlists: [],
+    playlistsReady: false,
+    activePlaylistId: null,
+    playlistRenderLimit: PLAYLIST_RENDER_STEP,
+    playlistPendingTrack: null,
+    editingPlaylistId: null
   };
 
   let ui = {};
@@ -32,6 +44,8 @@
   let ytReady = false;
   let progressTimer = 0;
   let searchAbort = null;
+  let playlistDbPromise = null;
+  let playlistLoadPromise = null;
 
   const el = (tag, cls = '', text) => {
     const n = document.createElement(tag);
@@ -62,6 +76,122 @@
     } catch {
       return fallback;
     }
+  }
+
+  function playlistId() {
+    try { return crypto.randomUUID(); } catch {}
+    return `pl-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 9)}`;
+  }
+
+  function normalizePlaylist(raw) {
+    const tracks = Array.isArray(raw?.tracks)
+      ? raw.tracks.map(cleanTrackForStorage).filter(t => t && t.kind !== 'local').slice(0, MAX_PLAYLIST_TRACKS)
+      : [];
+    const accent = /^#[0-9a-f]{6}$/i.test(String(raw?.accent || '')) ? raw.accent : PLAYLIST_ACCENTS[0];
+    const emoji = String(raw?.emoji || '🎵').trim().slice(0, 8) || '🎵';
+    return {
+      id: String(raw?.id || playlistId()),
+      name: String(raw?.name || 'Untitled playlist').trim().slice(0, 40) || 'Untitled playlist',
+      description: String(raw?.description || '').trim().slice(0, 120),
+      emoji,
+      accent,
+      createdAt: Number(raw?.createdAt) || Date.now(),
+      updatedAt: Number(raw?.updatedAt) || Date.now(),
+      tracks
+    };
+  }
+
+  function openPlaylistDb() {
+    if (playlistDbPromise) return playlistDbPromise;
+    if (!('indexedDB' in window)) return Promise.resolve(null);
+    playlistDbPromise = new Promise(resolve => {
+      let request;
+      try { request = indexedDB.open(PLAYLIST_DB, 1); } catch { resolve(null); return; }
+      request.onupgradeneeded = () => {
+        const db = request.result;
+        if (!db.objectStoreNames.contains(PLAYLIST_STORE)) db.createObjectStore(PLAYLIST_STORE, { keyPath: 'id' });
+      };
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => resolve(null);
+      request.onblocked = () => resolve(null);
+    });
+    return playlistDbPromise;
+  }
+
+  function ensurePlaylistsLoaded() {
+    if (state.playlistsReady) return Promise.resolve();
+    if (!playlistLoadPromise) playlistLoadPromise = loadPlaylists().finally(() => { playlistLoadPromise = null; });
+    return playlistLoadPromise;
+  }
+
+  async function loadPlaylists() {
+    const db = await openPlaylistDb();
+    let list = [];
+    if (db) {
+      list = await new Promise(resolve => {
+        try {
+          const tx = db.transaction(PLAYLIST_STORE, 'readonly');
+          const req = tx.objectStore(PLAYLIST_STORE).getAll();
+          req.onsuccess = () => resolve(req.result || []);
+          req.onerror = () => resolve([]);
+        } catch { resolve([]); }
+      });
+    } else {
+      list = safeJSON('blobby.music.v3.playlists.fallback', []);
+    }
+    state.playlists = (Array.isArray(list) ? list : [])
+      .map(normalizePlaylist)
+      .slice(0, MAX_PLAYLISTS)
+      .sort((a, b) => b.updatedAt - a.updatedAt);
+    state.playlistsReady = true;
+    if (state.open && state.view === 'playlists') renderPlaylists();
+    if (ui.playlistChooser && !ui.playlistChooser.hidden && ui.dialogLayer && !ui.dialogLayer.hidden) renderPlaylistChooser();
+  }
+
+  async function persistPlaylist(playlist) {
+    const clean = normalizePlaylist(playlist);
+    const db = await openPlaylistDb();
+    if (db) {
+      await new Promise(resolve => {
+        try {
+          const tx = db.transaction(PLAYLIST_STORE, 'readwrite');
+          tx.objectStore(PLAYLIST_STORE).put(clean);
+          tx.oncomplete = () => resolve();
+          tx.onerror = () => resolve();
+          tx.onabort = () => resolve();
+        } catch { resolve(); }
+      });
+      return;
+    }
+    localStorage.setItem('blobby.music.v3.playlists.fallback', JSON.stringify(state.playlists.map(normalizePlaylist)));
+  }
+
+  async function deletePlaylistPersist(id) {
+    const db = await openPlaylistDb();
+    if (db) {
+      await new Promise(resolve => {
+        try {
+          const tx = db.transaction(PLAYLIST_STORE, 'readwrite');
+          tx.objectStore(PLAYLIST_STORE).delete(id);
+          tx.oncomplete = () => resolve();
+          tx.onerror = () => resolve();
+          tx.onabort = () => resolve();
+        } catch { resolve(); }
+      });
+      return;
+    }
+    localStorage.setItem('blobby.music.v3.playlists.fallback', JSON.stringify(state.playlists.map(normalizePlaylist)));
+  }
+
+  function playlistById(id) {
+    return state.playlists.find(p => p.id === id) || null;
+  }
+
+  function touchPlaylist(playlist) {
+    if (!playlist) return;
+    playlist.updatedAt = Date.now();
+    state.playlists.sort((a, b) => b.updatedAt - a.updatedAt);
+    persistPlaylist(playlist);
   }
 
   function savePrefs() {
@@ -198,6 +328,9 @@
             <button type="button" data-view="library">
               <span>≡</span><span>Your Library</span>
             </button>
+            <button type="button" data-view="playlists">
+              <span>▤</span><span>Playlists</span>
+            </button>
             <button type="button" data-view="local">
               <span>＋</span><span>Local Music</span>
             </button>
@@ -302,6 +435,41 @@
               </section>
             </section>
 
+            <section class="bm-playlists-view" data-view-panel="playlists" hidden>
+              <div class="bm-playlists-home">
+                <div class="bm-section-head bm-library-head">
+                  <div>
+                    <small>PLAYLISTS</small>
+                    <h2>Your playlists</h2>
+                    <p class="bm-muted">Saved on this device. Lightweight, fast, and available after restart.</p>
+                  </div>
+                  <button class="bm-new-playlist" type="button">+ New playlist</button>
+                </div>
+                <div class="bm-playlist-grid"></div>
+              </div>
+
+              <div class="bm-playlist-detail" hidden>
+                <div class="bm-playlist-detail-head">
+                  <button class="bm-playlist-back" type="button">‹ Playlists</button>
+                  <div class="bm-playlist-hero-art"><span>🎵</span><img alt="" hidden></div>
+                  <div class="bm-playlist-hero-copy">
+                    <small>PLAYLIST</small>
+                    <h2 class="bm-playlist-title">Playlist</h2>
+                    <p class="bm-playlist-description"></p>
+                    <span class="bm-playlist-meta"></span>
+                  </div>
+                  <div class="bm-playlist-actions">
+                    <button class="bm-playlist-play" type="button">▶ Play</button>
+                    <button class="bm-playlist-shuffle" type="button">⤨ Shuffle</button>
+                    <button class="bm-playlist-edit" type="button">Edit</button>
+                    <button class="bm-playlist-delete" type="button">Delete</button>
+                  </div>
+                </div>
+                <div class="bm-playlist-track-list"></div>
+                <button class="bm-playlist-more" type="button" hidden>Show more</button>
+              </div>
+            </section>
+
             <section class="bm-local-view" data-view-panel="local" hidden>
               <div class="bm-section-head bm-library-head">
                 <div>
@@ -357,6 +525,32 @@
           </div>
         </section>
       </section>
+
+      <div class="bm-dialog-layer" hidden>
+        <section class="bm-dialog" role="dialog" aria-modal="true" aria-labelledby="bmDialogTitle">
+          <button class="bm-dialog-close" type="button" aria-label="Close">×</button>
+          <div class="bm-playlist-editor">
+            <small>PLAYLIST</small>
+            <h3 id="bmDialogTitle" class="bm-dialog-title">Create playlist</h3>
+            <label>Playlist name<input class="bm-playlist-name-input" maxlength="40" autocomplete="off"></label>
+            <label>Description<textarea class="bm-playlist-description-input" maxlength="120" rows="3" placeholder="Optional description"></textarea><small class="bm-playlist-description-count">0/120</small></label>
+            <div class="bm-playlist-custom-row">
+              <label>Icon<input class="bm-playlist-emoji-input" maxlength="8" value="🎵" aria-label="Playlist emoji"></label>
+              <label>Accent<input class="bm-playlist-color-input" type="color" value="#bdfbd7" aria-label="Playlist accent color"></label>
+            </div>
+            <div class="bm-playlist-colors" aria-label="Playlist accent presets"></div>
+            <div class="bm-playlist-editor-preview"><span>🎵</span><div><strong>Playlist name</strong><small>0 tracks</small></div></div>
+            <div class="bm-dialog-actions"><button class="bm-dialog-cancel" type="button">Cancel</button><button class="bm-playlist-save" type="button">Save playlist</button></div>
+          </div>
+          <div class="bm-playlist-chooser" hidden>
+            <small>ADD TO PLAYLIST</small>
+            <h3 class="bm-chooser-title">Choose a playlist</h3>
+            <div class="bm-playlist-chooser-list"></div>
+            <button class="bm-chooser-create" type="button">+ Create new playlist</button>
+          </div>
+        </section>
+      </div>
+      <div class="bm-toast-region" aria-live="polite"></div>
     `;
 
     const mini = el('div', 'blobby-music-mini');
@@ -392,6 +586,39 @@
       trackList: root.querySelector('.bm-track-list'),
       favorites: root.querySelector('.bm-favorites'),
       recent: root.querySelector('.bm-recent'),
+      playlistsHome: root.querySelector('.bm-playlists-home'),
+      playlistGrid: root.querySelector('.bm-playlist-grid'),
+      newPlaylist: root.querySelector('.bm-new-playlist'),
+      playlistDetail: root.querySelector('.bm-playlist-detail'),
+      playlistBack: root.querySelector('.bm-playlist-back'),
+      playlistHeroArt: root.querySelector('.bm-playlist-hero-art'),
+      playlistTitle: root.querySelector('.bm-playlist-title'),
+      playlistDescription: root.querySelector('.bm-playlist-description'),
+      playlistMeta: root.querySelector('.bm-playlist-meta'),
+      playlistPlay: root.querySelector('.bm-playlist-play'),
+      playlistShuffle: root.querySelector('.bm-playlist-shuffle'),
+      playlistEdit: root.querySelector('.bm-playlist-edit'),
+      playlistDelete: root.querySelector('.bm-playlist-delete'),
+      playlistTrackList: root.querySelector('.bm-playlist-track-list'),
+      playlistMore: root.querySelector('.bm-playlist-more'),
+      dialogLayer: root.querySelector('.bm-dialog-layer'),
+      dialog: root.querySelector('.bm-dialog'),
+      dialogClose: root.querySelector('.bm-dialog-close'),
+      dialogCancel: root.querySelector('.bm-dialog-cancel'),
+      playlistEditor: root.querySelector('.bm-playlist-editor'),
+      playlistChooser: root.querySelector('.bm-playlist-chooser'),
+      dialogTitle: root.querySelector('.bm-dialog-title'),
+      playlistNameInput: root.querySelector('.bm-playlist-name-input'),
+      playlistDescriptionInput: root.querySelector('.bm-playlist-description-input'),
+      playlistDescriptionCount: root.querySelector('.bm-playlist-description-count'),
+      playlistEmojiInput: root.querySelector('.bm-playlist-emoji-input'),
+      playlistColorInput: root.querySelector('.bm-playlist-color-input'),
+      playlistColors: root.querySelector('.bm-playlist-colors'),
+      playlistPreview: root.querySelector('.bm-playlist-editor-preview'),
+      playlistSave: root.querySelector('.bm-playlist-save'),
+      playlistChooserList: root.querySelector('.bm-playlist-chooser-list'),
+      chooserCreate: root.querySelector('.bm-chooser-create'),
+      toastRegion: root.querySelector('.bm-toast-region'),
       addLocal: root.querySelector('.bm-add-local'),
       picker: root.querySelector('.bm-file-picker'),
       localList: root.querySelector('.bm-local-list'),
@@ -424,9 +651,36 @@
 
     ui.close.onclick = close;
     ui.backdrop.onclick = close;
+    ui.dialogClose.onclick = closePlaylistDialog;
+    ui.dialogCancel.onclick = closePlaylistDialog;
+    ui.dialogLayer.onclick = e => { if (e.target === ui.dialogLayer) closePlaylistDialog(); };
+    ui.newPlaylist.onclick = () => openPlaylistEditor();
+    ui.playlistBack.onclick = showPlaylistHome;
+    ui.playlistPlay.onclick = () => playActivePlaylist(false);
+    ui.playlistShuffle.onclick = () => playActivePlaylist(true);
+    ui.playlistEdit.onclick = () => { const p = playlistById(state.activePlaylistId); if (p) openPlaylistEditor(p); };
+    ui.playlistDelete.onclick = deleteActivePlaylist;
+    ui.playlistMore.onclick = () => { state.playlistRenderLimit += PLAYLIST_RENDER_STEP; renderPlaylistDetail(); };
+    ui.playlistSave.onclick = savePlaylistEditor;
+    ui.chooserCreate.onclick = () => openPlaylistEditor(null, state.playlistPendingTrack);
+    ui.playlistDescriptionInput.addEventListener('input', updatePlaylistEditorPreview);
+    ui.playlistNameInput.addEventListener('input', updatePlaylistEditorPreview);
+    ui.playlistEmojiInput.addEventListener('input', updatePlaylistEditorPreview);
+    ui.playlistColorInput.addEventListener('input', updatePlaylistEditorPreview);
+    PLAYLIST_ACCENTS.forEach(color => {
+      const b = el('button', 'bm-playlist-color-swatch');
+      b.type = 'button';
+      b.style.setProperty('--playlist-color', color);
+      b.title = color;
+      b.onclick = () => { ui.playlistColorInput.value = color; updatePlaylistEditorPreview(); };
+      ui.playlistColors.append(b);
+    });
 
     ui.navButtons.forEach(btn => {
-      btn.onclick = () => setView(btn.dataset.view);
+      btn.onclick = () => {
+        if (btn.dataset.view === 'playlists') state.activePlaylistId = null;
+        setView(btn.dataset.view);
+      };
     });
 
     ui.providerShortcuts.forEach(btn => {
@@ -520,7 +774,9 @@
     });
 
     document.addEventListener('keydown', e => {
-      if (e.key === 'Escape' && state.open) close();
+      if (e.key !== 'Escape' || !state.open) return;
+      if (ui.dialogLayer && !ui.dialogLayer.hidden) closePlaylistDialog();
+      else close();
     });
 
     window.addEventListener('blobby:license-locked', () => {
@@ -529,6 +785,7 @@
     });
 
     setView('search');
+    ensurePlaylistsLoaded().catch(() => { state.playlistsReady = true; });
     renderLibrary();
     renderLocal();
     renderNowPlaying();
@@ -541,7 +798,7 @@
   function stopProgressTimer(){if(progressTimer){clearInterval(progressTimer);progressTimer=0;}}
 
   function setView(view) {
-    if (!['search', 'library', 'local'].includes(view)) view = 'search';
+    if (!['search', 'library', 'playlists', 'local'].includes(view)) view = 'search';
     state.view = view;
 
     ui.navButtons.forEach(btn => btn.classList.toggle('active', btn.dataset.view === view));
@@ -550,12 +807,333 @@
     });
 
     if (view === 'library') renderLibrary();
+    if (view === 'playlists') renderPlaylists();
     if (view === 'local') renderLocal();
   }
 
   function setStatus(message = '', error = false) {
     ui.status.textContent = message;
     ui.status.classList.toggle('error', !!error);
+  }
+
+  function toastMusic(message) {
+    if (!ui.toastRegion) return;
+    const n = el('div', 'bm-toast', message);
+    ui.toastRegion.append(n);
+    setTimeout(() => n.remove(), 2300);
+  }
+
+  function closePlaylistDialog() {
+    if (!ui.dialogLayer) return;
+    ui.dialogLayer.hidden = true;
+    state.editingPlaylistId = null;
+    state.playlistPendingTrack = null;
+  }
+
+  function updatePlaylistEditorPreview() {
+    if (!ui.playlistPreview) return;
+    const name = ui.playlistNameInput.value.trim() || 'Playlist name';
+    const emoji = ui.playlistEmojiInput.value.trim() || '🎵';
+    const accent = /^#[0-9a-f]{6}$/i.test(ui.playlistColorInput.value) ? ui.playlistColorInput.value : PLAYLIST_ACCENTS[0];
+    const existing = playlistById(state.editingPlaylistId);
+    ui.playlistDescriptionCount.textContent = `${ui.playlistDescriptionInput.value.length}/120`;
+    ui.playlistPreview.style.setProperty('--playlist-accent', accent);
+    ui.playlistPreview.querySelector('span').textContent = emoji;
+    ui.playlistPreview.querySelector('strong').textContent = name;
+    ui.playlistPreview.querySelector('small').textContent = `${existing?.tracks?.length || (state.playlistPendingTrack ? 1 : 0)} track${(existing?.tracks?.length || (state.playlistPendingTrack ? 1 : 0)) === 1 ? '' : 's'}`;
+  }
+
+  async function openPlaylistEditor(playlist = null, pendingTrack = null) {
+    if (!ui.dialogLayer) return;
+    await ensurePlaylistsLoaded();
+    if (!playlist && state.playlists.length >= MAX_PLAYLISTS) {
+      toastMusic(`You can keep up to ${MAX_PLAYLISTS} playlists.`);
+      return;
+    }
+    state.editingPlaylistId = playlist?.id || null;
+    state.playlistPendingTrack = pendingTrack && pendingTrack.kind !== 'local' ? cleanTrackForStorage(pendingTrack) : null;
+    ui.playlistEditor.hidden = false;
+    ui.playlistChooser.hidden = true;
+    ui.dialogTitle.textContent = playlist ? 'Edit playlist' : 'Create playlist';
+    ui.playlistNameInput.value = playlist?.name || '';
+    ui.playlistDescriptionInput.value = playlist?.description || '';
+    ui.playlistEmojiInput.value = playlist?.emoji || '🎵';
+    ui.playlistColorInput.value = playlist?.accent || PLAYLIST_ACCENTS[0];
+    ui.playlistSave.textContent = playlist ? 'Save changes' : 'Create playlist';
+    ui.dialogLayer.hidden = false;
+    updatePlaylistEditorPreview();
+    setTimeout(() => ui.playlistNameInput.focus(), 30);
+  }
+
+  async function savePlaylistEditor() {
+    const name = ui.playlistNameInput.value.trim().replace(/\s+/g, ' ');
+    if (!name) {
+      toastMusic('Give your playlist a name.');
+      ui.playlistNameInput.focus();
+      return;
+    }
+    const description = ui.playlistDescriptionInput.value.trim().slice(0, 120);
+    const emoji = ui.playlistEmojiInput.value.trim().slice(0, 8) || '🎵';
+    const accent = /^#[0-9a-f]{6}$/i.test(ui.playlistColorInput.value) ? ui.playlistColorInput.value : PLAYLIST_ACCENTS[0];
+    let playlist = playlistById(state.editingPlaylistId);
+    if (playlist) {
+      playlist.name = name.slice(0, 40);
+      playlist.description = description;
+      playlist.emoji = emoji;
+      playlist.accent = accent;
+      playlist.updatedAt = Date.now();
+    } else {
+      playlist = normalizePlaylist({ id: playlistId(), name, description, emoji, accent, tracks: [], createdAt: Date.now(), updatedAt: Date.now() });
+      if (state.playlistPendingTrack) playlist.tracks.push(cleanTrackForStorage(state.playlistPendingTrack));
+      state.playlists.unshift(playlist);
+    }
+    await persistPlaylist(playlist);
+    state.playlists.sort((a, b) => b.updatedAt - a.updatedAt);
+    const pendingAdded = !!state.playlistPendingTrack;
+    closePlaylistDialog();
+    renderPlaylists();
+    openPlaylistDetail(playlist.id);
+    toastMusic(pendingAdded ? `Added to ${playlist.name}.` : 'Playlist saved.');
+  }
+
+  async function openPlaylistChooser(track) {
+    if (!track || track.kind === 'local') {
+      toastMusic('Local files cannot be saved to playlists after restart yet.');
+      return;
+    }
+    await ensurePlaylistsLoaded();
+    state.playlistPendingTrack = cleanTrackForStorage(track);
+    state.editingPlaylistId = null;
+    ui.playlistEditor.hidden = true;
+    ui.playlistChooser.hidden = false;
+    ui.dialogLayer.hidden = false;
+    renderPlaylistChooser();
+  }
+
+  function renderPlaylistChooser() {
+    ui.playlistChooserList.replaceChildren();
+    if (!state.playlistsReady) {
+      ui.playlistChooserList.append(el('div', 'bm-empty', 'Loading playlists…'));
+      return;
+    }
+    if (!state.playlists.length) {
+      ui.playlistChooserList.append(el('div', 'bm-empty', 'No playlists yet. Create one and this track will be added automatically.'));
+      return;
+    }
+    state.playlists.forEach(playlist => {
+      const b = el('button', 'bm-playlist-choice');
+      b.type = 'button';
+      b.style.setProperty('--playlist-accent', playlist.accent);
+      const icon = el('span', 'bm-playlist-choice-icon', playlist.emoji || '🎵');
+      const copy = el('span', 'bm-playlist-choice-copy');
+      copy.append(el('strong', '', playlist.name), el('small', '', `${playlist.tracks.length} track${playlist.tracks.length === 1 ? '' : 's'}`));
+      b.append(icon, copy);
+      b.onclick = () => addTrackToPlaylist(playlist, state.playlistPendingTrack);
+      ui.playlistChooserList.append(b);
+    });
+  }
+
+  async function addTrackToPlaylist(playlist, track) {
+    if (!playlist || !track) return;
+    if (playlist.tracks.some(t => sameTrack(t, track))) {
+      toastMusic(`Already in ${playlist.name}.`);
+      closePlaylistDialog();
+      return;
+    }
+    if (playlist.tracks.length >= MAX_PLAYLIST_TRACKS) {
+      toastMusic(`A playlist can hold up to ${MAX_PLAYLIST_TRACKS} tracks.`);
+      return;
+    }
+    playlist.tracks.push(cleanTrackForStorage(track));
+    playlist.updatedAt = Date.now();
+    state.playlists.sort((a, b) => b.updatedAt - a.updatedAt);
+    await persistPlaylist(playlist);
+    const name = playlist.name;
+    closePlaylistDialog();
+    if (state.view === 'playlists') renderPlaylists();
+    toastMusic(`Added to ${name}.`);
+  }
+
+  function playlistCoverTrack(playlist) {
+    return playlist?.tracks?.find(t => t.thumbnail) || null;
+  }
+
+  function renderPlaylists() {
+    if (!ui.playlistGrid) return;
+    if (state.activePlaylistId && playlistById(state.activePlaylistId)) {
+      renderPlaylistDetail();
+      return;
+    }
+    showPlaylistHome(false);
+    ui.playlistGrid.replaceChildren();
+    if (!state.playlistsReady) {
+      ui.playlistGrid.append(el('div', 'bm-empty', 'Loading playlists…'));
+      return;
+    }
+    if (!state.playlists.length) {
+      const empty = el('div', 'bm-playlist-empty');
+      empty.append(el('div', 'bm-playlist-empty-icon', '▤'), el('h3', '', 'Make your first playlist'), el('p', '', 'Save tracks from search or your library, then arrange them however you want.'));
+      const create = el('button', 'bm-new-playlist', '+ New playlist');
+      create.type = 'button';
+      create.onclick = () => openPlaylistEditor();
+      empty.append(create);
+      ui.playlistGrid.append(empty);
+      return;
+    }
+    state.playlists.forEach(playlist => {
+      const card = el('article', 'bm-playlist-card');
+      card.style.setProperty('--playlist-accent', playlist.accent);
+      const art = el('button', 'bm-playlist-card-art');
+      art.type = 'button';
+      const cover = playlistCoverTrack(playlist);
+      if (cover?.thumbnail) {
+        const img = new Image();
+        img.alt = '';
+        img.loading = 'lazy';
+        img.decoding = 'async';
+        img.src = cover.thumbnail;
+        art.append(img);
+      }
+      art.append(el('span', 'bm-playlist-card-emoji', playlist.emoji || '🎵'));
+      art.onclick = () => openPlaylistDetail(playlist.id);
+      const copy = el('button', 'bm-playlist-card-copy');
+      copy.type = 'button';
+      copy.append(el('strong', '', playlist.name), el('span', '', playlist.description || `${playlist.tracks.length} track${playlist.tracks.length === 1 ? '' : 's'}`), el('small', '', `${playlist.tracks.length} track${playlist.tracks.length === 1 ? '' : 's'}`));
+      copy.onclick = () => openPlaylistDetail(playlist.id);
+      const edit = el('button', 'bm-playlist-card-edit', 'Edit');
+      edit.type = 'button';
+      edit.onclick = () => openPlaylistEditor(playlist);
+      card.append(art, copy, edit);
+      ui.playlistGrid.append(card);
+    });
+  }
+
+  function showPlaylistHome(clear = true) {
+    if (clear) state.activePlaylistId = null;
+    state.playlistRenderLimit = PLAYLIST_RENDER_STEP;
+    ui.playlistsHome.hidden = false;
+    ui.playlistDetail.hidden = true;
+    if (clear) renderPlaylists();
+  }
+
+  function openPlaylistDetail(id) {
+    const playlist = playlistById(id);
+    if (!playlist) return;
+    state.activePlaylistId = id;
+    state.playlistRenderLimit = PLAYLIST_RENDER_STEP;
+    setView('playlists');
+  }
+
+  function renderPlaylistDetail() {
+    const playlist = playlistById(state.activePlaylistId);
+    if (!playlist) {
+      showPlaylistHome();
+      return;
+    }
+    ui.playlistsHome.hidden = true;
+    ui.playlistDetail.hidden = false;
+    ui.playlistTitle.textContent = playlist.name;
+    ui.playlistDescription.textContent = playlist.description || 'No description yet.';
+    ui.playlistMeta.textContent = `${playlist.tracks.length} track${playlist.tracks.length === 1 ? '' : 's'} • saved on this device`;
+    ui.playlistHeroArt.style.setProperty('--playlist-accent', playlist.accent);
+    const heroEmoji = ui.playlistHeroArt.querySelector('span');
+    const heroImg = ui.playlistHeroArt.querySelector('img');
+    heroEmoji.textContent = playlist.emoji || '🎵';
+    const cover = playlistCoverTrack(playlist);
+    if (cover?.thumbnail) {
+      heroImg.src = cover.thumbnail;
+      heroImg.hidden = false;
+    } else {
+      heroImg.removeAttribute('src');
+      heroImg.hidden = true;
+    }
+    ui.playlistPlay.disabled = !playlist.tracks.length;
+    ui.playlistShuffle.disabled = playlist.tracks.length < 2;
+    renderPlaylistTracks(playlist);
+  }
+
+  function renderPlaylistTracks(playlist) {
+    ui.playlistTrackList.replaceChildren();
+    if (!playlist.tracks.length) {
+      ui.playlistTrackList.append(el('div', 'bm-empty', 'This playlist is empty. Use the + button beside a song to add it.'));
+      ui.playlistMore.hidden = true;
+      return;
+    }
+    const visible = playlist.tracks.slice(0, state.playlistRenderLimit);
+    const frag = document.createDocumentFragment();
+    visible.forEach((track, index) => {
+      const row = el('div', 'bm-playlist-track-row');
+      if (sameTrack(track, state.currentTrack)) row.classList.add('active');
+      row.append(el('span', 'bm-track-number', String(index + 1)));
+      const art = el('button', 'bm-row-art');
+      art.type = 'button';
+      if (track.thumbnail) {
+        const img = new Image(); img.alt = ''; img.loading = 'lazy'; img.decoding = 'async'; img.src = track.thumbnail; art.append(img);
+      } else art.textContent = providerIcon(track.provider);
+      art.onclick = () => playPlaylistTrack(playlist, index);
+      const copy = el('button', 'bm-row-copy'); copy.type = 'button';
+      copy.innerHTML = `<strong>${escapeAttr(track.title)}</strong><span>${escapeAttr(track.artist)}</span>`;
+      copy.onclick = () => playPlaylistTrack(playlist, index);
+      const durationNode = el('span', 'bm-row-duration', track.duration ? fmt(track.duration) : '—');
+      const controls = el('div', 'bm-playlist-track-actions');
+      const up = el('button', '', '↑'); up.type = 'button'; up.title = 'Move up'; up.disabled = index === 0; up.onclick = () => movePlaylistTrack(playlist, index, -1);
+      const down = el('button', '', '↓'); down.type = 'button'; down.title = 'Move down'; down.disabled = index === playlist.tracks.length - 1; down.onclick = () => movePlaylistTrack(playlist, index, 1);
+      const remove = el('button', 'danger', '×'); remove.type = 'button'; remove.title = 'Remove from playlist'; remove.onclick = () => removePlaylistTrack(playlist, index);
+      controls.append(up, down, remove);
+      row.append(art, copy, durationNode, controls);
+      frag.append(row);
+    });
+    ui.playlistTrackList.append(frag);
+    ui.playlistMore.hidden = state.playlistRenderLimit >= playlist.tracks.length;
+    if (!ui.playlistMore.hidden) ui.playlistMore.textContent = `Show ${Math.min(PLAYLIST_RENDER_STEP, playlist.tracks.length - state.playlistRenderLimit)} more`;
+  }
+
+  function playPlaylistTrack(playlist, index) {
+    state.queue = playlist.tracks.map(cleanTrackForStorage);
+    state.index = clamp(index, 0, state.queue.length - 1);
+    playTrack(state.queue[state.index]);
+  }
+
+  function playActivePlaylist(shuffled = false) {
+    const playlist = playlistById(state.activePlaylistId);
+    if (!playlist?.tracks?.length) return;
+    const queue = playlist.tracks.map(cleanTrackForStorage);
+    if (shuffled) {
+      for (let i = queue.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [queue[i], queue[j]] = [queue[j], queue[i]];
+      }
+    }
+    playQueue(queue, 0);
+  }
+
+  async function movePlaylistTrack(playlist, index, delta) {
+    const target = index + delta;
+    if (!playlist || target < 0 || target >= playlist.tracks.length) return;
+    [playlist.tracks[index], playlist.tracks[target]] = [playlist.tracks[target], playlist.tracks[index]];
+    playlist.updatedAt = Date.now();
+    await persistPlaylist(playlist);
+    renderPlaylistDetail();
+  }
+
+  async function removePlaylistTrack(playlist, index) {
+    if (!playlist || index < 0 || index >= playlist.tracks.length) return;
+    const [removed] = playlist.tracks.splice(index, 1);
+    playlist.updatedAt = Date.now();
+    await persistPlaylist(playlist);
+    renderPlaylistDetail();
+    toastMusic(`Removed ${removed?.title || 'track'}.`);
+  }
+
+  async function deleteActivePlaylist() {
+    const playlist = playlistById(state.activePlaylistId);
+    if (!playlist) return;
+    if (!confirm(`Delete “${playlist.name}”? This cannot be undone.`)) return;
+    state.playlists = state.playlists.filter(p => p.id !== playlist.id);
+    await deletePlaylistPersist(playlist.id);
+    state.activePlaylistId = null;
+    renderPlaylists();
+    toastMusic('Playlist deleted.');
   }
 
   function resetSearchUI() {
@@ -725,6 +1303,12 @@
       const provider = el('span', `bm-row-provider ${track.kind}`, providerLabel(track.provider));
       const duration = el('span', 'bm-row-duration', track.duration ? fmt(track.duration) : '—');
 
+      const add = el('button', 'bm-row-playlist', '+');
+      add.type = 'button';
+      add.title = track.kind === 'local' ? 'Local files cannot be saved to playlists yet' : 'Add to playlist';
+      add.disabled = track.kind === 'local';
+      add.onclick = e => { e.stopPropagation(); openPlaylistChooser(track); };
+
       const fav = el('button', 'bm-row-fav', isFavorite(track) ? '♥' : '♡');
       fav.type = 'button';
       fav.title = isFavorite(track) ? 'Remove favorite' : 'Add favorite';
@@ -734,7 +1318,7 @@
         fav.textContent = isFavorite(track) ? '♥' : '♡';
       };
 
-      row.append(number, art, copy, provider, duration, fav);
+      row.append(number, art, copy, provider, duration, add, fav);
       container.append(row);
     });
   }
@@ -768,6 +1352,7 @@
     renderNowPlaying();
     renderSearchResultsIfVisible();
     renderLibrary();
+    if (state.view === 'playlists' && state.activePlaylistId) renderPlaylistDetail();
 
     if (state.currentKind === 'local') {
       if (!track.blobUrl) {
@@ -1449,6 +2034,7 @@
   function close() {
     if (!state.open) return;
 
+    if (ui.dialogLayer && !ui.dialogLayer.hidden) closePlaylistDialog();
     state.open = false;
     ui.root.dataset.open = 'false';
     ui.shell.setAttribute('aria-hidden', 'true');

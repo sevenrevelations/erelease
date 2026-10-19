@@ -1,12 +1,12 @@
 'use strict';
 (() => {
-  const VERSION='stage14-20261018';
+  const VERSION='stage14.2-20261018';
   const manifest={
     profile:{file:'profile.js',global:'BlobbyProfile'},
     dm:{file:'dm.js',global:'BlobbyDM'},
     group:{file:'group.js',global:'BlobbyGroup'},
     leaderboard:{file:'leaderboard.js',global:'BlobbyLeaderboard'},
-    music:{file:'music.js',global:'BlobbyMusic'}
+    music:{file:'music.js',css:'music.css',global:'BlobbyMusic'}
   };
   const pending=new Map();
 
@@ -17,6 +17,13 @@
     if(api(name))return Promise.resolve(api(name));
     if(pending.has(name))return pending.get(name);
     const promise=new Promise((resolve,reject)=>{
+      if(item.css&&!document.querySelector(`link[data-blobby-feature-css="${name}"]`)){
+        const link=document.createElement('link');
+        link.rel='stylesheet';
+        link.href=`./${item.css}?v=${VERSION}`;
+        link.dataset.blobbyFeatureCss=name;
+        document.head.append(link);
+      }
       const script=document.createElement('script');
       script.src=`./${item.file}?v=${VERSION}`;
       script.async=true;
