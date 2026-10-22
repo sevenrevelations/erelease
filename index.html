@@ -1,6 +1,15 @@
 <!doctype html>
 <html lang="en" data-ui-mode="home" data-base-ui-mode="home" data-browser-active="false" data-tabs-visible="true">
 <head>
+  <script>
+    (()=>{
+      const p=location.pathname.replace(/\/+$/,'');
+      if(/\/admin$/i.test(p)){
+        const base=location.pathname.endsWith('/')?'../admin.html':'./admin.html';
+        location.replace(new URL(base+location.search+location.hash,location.href).href);
+      }
+    })();
+  </script>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#080a12">
