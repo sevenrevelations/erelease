@@ -11,6 +11,8 @@ const configured =
 let supabase = null
 let session = null
 let licenses = []
+let globalAnnouncements = []
+let globalAnnouncementsAdmin = false
 
 if (configured) {
   supabase = createClient(
@@ -815,6 +817,186 @@ async function openAudit(x) {
 }
 
 
+
+
+// =============================================================
+// GLOBAL ANNOUNCEMENTS
+// =============================================================
+
+const toLocalInput = value => {
+  if (!value) return ''
+  const d = new Date(value)
+  if (Number.isNaN(d.getTime())) return ''
+  const pad = n => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
+}
+
+const isoOrNull = value => value ? new Date(value).toISOString() : null
+
+function announcementState(a) {
+  const now = Date.now()
+  const starts = Date.parse(a.starts_at || 0)
+  const ends = a.ends_at ? Date.parse(a.ends_at) : Infinity
+  if (!a.active) return 'draft'
+  if (starts > now) return 'scheduled'
+  if (ends <= now) return 'expired'
+  return 'active'
+}
+
+function setGlobalStatus(text) {
+  const n = $('globalAnnouncementStatus')
+  if (n) n.textContent = text || ''
+}
+
+async function loadGlobalAnnouncements() {
+  if (!supabase || !session) return
+  setGlobalStatus('Loading global announcements…')
+  try {
+    const { data: adminCheck, error: adminError } = await supabase.rpc('is_global_announcement_admin')
+    if (adminError) throw adminError
+    globalAnnouncementsAdmin = adminCheck === true
+    $('newGlobalAnnouncement').disabled = !globalAnnouncementsAdmin
+    if (!globalAnnouncementsAdmin) {
+      globalAnnouncements = []
+      $('globalAnnouncementList').replaceChildren(el('div','license-card','This admin account is not yet allowed to manage global announcements. Add its email to global_announcement_admins using the Stage 14.3 setup SQL.'))
+      setGlobalStatus('Announcement admin setup required.')
+      return
+    }
+    const { data, error } = await supabase
+      .from('global_announcements')
+      .select('*')
+      .order('created_at', { ascending:false })
+      .limit(100)
+    if (error) throw error
+    globalAnnouncements = data || []
+    renderGlobalAnnouncements()
+    setGlobalStatus(`${globalAnnouncements.length} global announcement${globalAnnouncements.length===1?'':'s'}.`)
+  } catch (e) {
+    setGlobalStatus(e?.message || 'Could not load global announcements.')
+  }
+}
+
+function renderGlobalAnnouncements() {
+  const list = $('globalAnnouncementList')
+  if (!list) return
+  list.replaceChildren()
+  if (!globalAnnouncements.length) {
+    list.append(el('div','license-card','No global announcements yet.'))
+    return
+  }
+  for (const a of globalAnnouncements) {
+    const card = el('article','ga-admin-card')
+    const top = el('div','ga-admin-card-head')
+    const titleWrap = el('div')
+    titleWrap.append(el('strong','ga-admin-title',a.title || 'Untitled'))
+    const meta = el('span','ga-admin-meta',`${a.announcement_type || 'general'}${a.version_label ? ` • v${a.version_label}` : ''}`)
+    titleWrap.append(meta)
+    const state = announcementState(a)
+    top.append(titleWrap, el('span',`pill ga-${state}`,state))
+    const msg = el('p','ga-admin-message',a.message || '')
+    const details = el('div','ga-admin-details')
+    details.append(
+      el('span','',`Display: ${a.display_mode || 'popup'}`),
+      el('span','',`Starts: ${fmt(a.starts_at)}`),
+      el('span','',`Ends: ${a.ends_at ? fmt(a.ends_at) : 'No expiration'}`),
+      el('span','',`Revision: ${a.revision || 1}`)
+    )
+    if (a.link_url) details.append(el('span','',`Link: ${a.link_label || 'View details'}`))
+    const actions = el('div','license-actions')
+    const edit = el('button','','Edit'); edit.type='button'; edit.onclick=()=>openGlobalAnnouncement(a)
+    const toggle = el('button','',a.active?'Deactivate':'Activate'); toggle.type='button'; toggle.onclick=()=>toggleGlobalAnnouncement(a)
+    const del = el('button','danger','Delete'); del.type='button'; del.onclick=()=>deleteGlobalAnnouncement(a)
+    actions.append(edit,toggle,del)
+    card.append(top,msg,details,actions)
+    list.append(card)
+  }
+}
+
+function openGlobalAnnouncement(a=null) {
+  if (!globalAnnouncementsAdmin) return
+  const fresh = !a
+  $('gaDialogTitle').textContent = fresh ? 'New announcement' : 'Edit announcement'
+  $('gaId').value = a?.id || ''
+  $('gaTitle').value = a?.title || ''
+  $('gaMessage').value = a?.message || ''
+  $('gaType').value = a?.announcement_type || 'update'
+  $('gaDisplay').value = a?.display_mode || 'popup'
+  $('gaVersion').value = a?.version_label || ''
+  $('gaLinkLabel').value = a?.link_label || 'View update'
+  $('gaLinkUrl').value = a?.link_url || ''
+  $('gaStarts').value = toLocalInput(a?.starts_at || new Date())
+  $('gaEnds').value = toLocalInput(a?.ends_at)
+  $('gaActive').checked = a ? !!a.active : true
+  $('gaError').textContent = ''
+  $('gaSave').textContent = fresh ? 'Publish' : 'Save changes'
+  $('globalAnnouncementDialog').showModal()
+  setTimeout(()=>$('gaTitle').focus(),30)
+}
+
+async function saveGlobalAnnouncement(e) {
+  e.preventDefault()
+  if (!globalAnnouncementsAdmin) return
+  $('gaError').textContent = ''
+  const title = $('gaTitle').value.trim()
+  const message = $('gaMessage').value.trim()
+  const link = $('gaLinkUrl').value.trim()
+  if (!title || !message) { $('gaError').textContent='Title and message are required.'; return }
+  if (link && !/^https:\/\//i.test(link)) { $('gaError').textContent='Use an https:// link.'; return }
+  let startsAt, endsAt
+  try {
+    startsAt = isoOrNull($('gaStarts').value) || new Date().toISOString()
+    endsAt = isoOrNull($('gaEnds').value)
+    if (endsAt && new Date(endsAt) <= new Date(startsAt)) throw Error('End time must be after start time.')
+  } catch (err) { $('gaError').textContent=err.message || 'Check the dates.'; return }
+  const row = {
+    title,
+    message,
+    announcement_type:$('gaType').value,
+    display_mode:$('gaDisplay').value,
+    version_label:$('gaVersion').value.trim() || null,
+    link_url:link || null,
+    link_label:$('gaLinkLabel').value.trim() || 'View details',
+    starts_at:startsAt,
+    ends_at:endsAt,
+    active:$('gaActive').checked
+  }
+  $('gaSave').disabled = true
+  try {
+    const id = $('gaId').value
+    if (id) {
+      const { error } = await supabase.from('global_announcements').update(row).eq('id',id)
+      if (error) throw error
+    } else {
+      row.created_by = session?.user?.id || null
+      const { error } = await supabase.from('global_announcements').insert(row)
+      if (error) throw error
+    }
+    $('globalAnnouncementDialog').close()
+    await loadGlobalAnnouncements()
+  } catch (err) {
+    $('gaError').textContent = err?.message || 'Could not save announcement.'
+  } finally { $('gaSave').disabled=false }
+}
+
+async function toggleGlobalAnnouncement(a) {
+  if (!globalAnnouncementsAdmin) return
+  try {
+    const { error } = await supabase.from('global_announcements').update({active:!a.active}).eq('id',a.id)
+    if (error) throw error
+    await loadGlobalAnnouncements()
+  } catch (e) { alert(e?.message || 'Could not update announcement.') }
+}
+
+async function deleteGlobalAnnouncement(a) {
+  if (!globalAnnouncementsAdmin || !confirm(`Delete "${a.title}"?`)) return
+  try {
+    const { error } = await supabase.from('global_announcements').delete().eq('id',a.id)
+    if (error) throw error
+    await loadGlobalAnnouncements()
+  } catch (e) { alert(e?.message || 'Could not delete announcement.') }
+}
+
+
 // =============================================================
 // LOGIN
 // =============================================================
@@ -899,6 +1081,11 @@ $('logoutButton').onclick =
 
 $('generateButton').onclick =
   openGenerate
+
+$('newGlobalAnnouncement').onclick =
+  () => openGlobalAnnouncement()
+
+$('globalAnnouncementForm').addEventListener('submit', saveGlobalAnnouncement)
 
 $('refreshButton').onclick =
   loadLicenses
@@ -1098,6 +1285,7 @@ async function showDashboard() {
     'Admin'
 
   await loadLicenses()
+  await loadGlobalAnnouncements()
 }
 
 
