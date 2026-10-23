@@ -67,7 +67,7 @@ function defaults(){return {version:VERSION,prefs:{
  cursorStyle:'default',cursorSize:18,cursorColor:'#8da2ff',cursorSecondary:'#d6ddff',cursorGlow:35,cursorTrail:8,cursorTrailFade:70,cursorSmoothing:.2,cursorRGBSpeed:8,
  layoutPreset:'minimal',layoutGrid:clone(layoutPresets.minimal.grid),layoutHidden:clone(layoutPresets.minimal.hidden),layoutLocked:true,mobileAutoLayout:true,
  showSubtitle:true,showClock:true,showShortcuts:true,showRecent:true,showPreview:true,showBack:true,showForward:true,showRefresh:true,showHome:true,showExternal:true,
- restorePreviousTabs:true,showBookmarksBar:true,showBookmarkFavicons:true,showBookmarkText:true,compactTabs:true,bookmarkOpenBehavior:'current',confirmCloseMultiple:true,
+ restorePreviousTabs:true,showBookmarksBar:true,showBookmarkFavicons:true,showBookmarkText:true,compactTabs:true,bookmarkOpenBehavior:'current',confirmCloseMultiple:true,blockAds:true,
  clock24:false,clockSeconds:false,showDate:true,commandPalette:true,keyboardShortcuts:true
  },links:clone(defaultLinks),bookmarks:clone(defaultBookmarks),recent:[],tabs:[createTab()],activeTab:null,customThemes:[],profiles:[],savedLayouts:[]};}
 const effectKeys=['snow','rain','stars','particles','fireflies','orbs','aurora','fog','matrix','bubbles','shooting','waves','rgbGlow','dust','constellation','clouds','digitalGrid','neonHorizon','liquid','lightRays','spaceDust'];
