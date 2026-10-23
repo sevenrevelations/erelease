@@ -1,0 +1,200 @@
+/* Blobby Stage 12.3 — Chat shell geometry only
+   Loaded after chat.css so older cached/coarse-pointer rules cannot win.
+   This does NOT restyle messages, channels, colors, fonts, roles, etc. */
+
+.blobby-chat-root{
+  position:fixed!important;
+  inset:0!important;
+}
+
+/* Darken only while chat is actually open. */
+.blobby-chat-backdrop{
+  position:fixed!important;
+  inset:0!important;
+  background:transparent!important;
+  pointer-events:none!important;
+}
+.blobby-chat-root[data-open="true"] .blobby-chat-backdrop{
+  background:#020604b8!important;
+  pointer-events:auto!important;
+}
+
+/* Match the centered DM / Group shell geometry. */
+.blobby-chat-panel{
+  position:fixed!important;
+
+  left:50%!important;
+  top:50%!important;
+  right:auto!important;
+  bottom:auto!important;
+  inset:auto!important;
+
+  width:min(980px,96vw)!important;
+  height:min(760px,94svh)!important;
+  max-width:none!important;
+  max-height:none!important;
+
+  margin:0!important;
+  overflow:hidden!important;
+
+  opacity:0!important;
+  visibility:hidden!important;
+  pointer-events:none!important;
+
+  transform:translate(-50%,-48%) scale(.985)!important;
+  transform-origin:center center!important;
+
+  transition:
+    opacity .18s ease,
+    transform .22s cubic-bezier(.2,.75,.2,1),
+    visibility 0s linear .22s!important;
+}
+
+.blobby-chat-root[data-open="true"] .blobby-chat-panel{
+  left:50%!important;
+  top:50%!important;
+  right:auto!important;
+  bottom:auto!important;
+
+  opacity:1!important;
+  visibility:visible!important;
+  pointer-events:auto!important;
+
+  transform:translate(-50%,-50%) scale(1)!important;
+
+  transition:
+    opacity .18s ease,
+    transform .22s cubic-bezier(.2,.75,.2,1),
+    visibility 0s linear 0s!important;
+}
+
+/* Chat contents remain the Fern-style 3-column layout,
+   just fitted into the same centered shell used by DMs. */
+.blobby-chat-workspace{
+  width:100%!important;
+  height:100%!important;
+  min-width:0!important;
+  min-height:0!important;
+  grid-template-columns:180px minmax(0,1fr) 190px!important;
+}
+
+/* Closed chat must never be an invisible click shield. */
+.blobby-chat-root:not([data-open="true"]) .blobby-chat-panel,
+.blobby-chat-root:not([data-open="true"]) .blobby-chat-panel *{
+  pointer-events:none!important;
+}
+
+/* Tablet: centered shell, hide members column. */
+@media (max-width:1040px) and (min-width:721px){
+  .blobby-chat-panel,
+  .blobby-chat-root[data-open="true"] .blobby-chat-panel{
+    position:fixed!important;
+    left:50%!important;
+    top:50%!important;
+    right:auto!important;
+    bottom:auto!important;
+    inset:auto!important;
+
+    width:min(900px,96vw)!important;
+    height:min(720px,94svh)!important;
+  }
+
+  .blobby-chat-panel{
+    transform:translate(-50%,-48%) scale(.985)!important;
+  }
+
+  .blobby-chat-root[data-open="true"] .blobby-chat-panel{
+    transform:translate(-50%,-50%) scale(1)!important;
+  }
+
+  .blobby-chat-workspace{
+    grid-template-columns:180px minmax(0,1fr)!important;
+  }
+
+  .blobby-chat-members{
+    display:none!important;
+  }
+}
+
+
+/* Stage 12.4 — touchscreen desktop correction.
+   Older chat.css treats every coarse-pointer device as mobile. Windows
+   touch laptops therefore hide the channel/member rails even at desktop
+   widths. Restore them based on viewport width, not pointer type. */
+@media (min-width:1041px){
+  .blobby-chat-channels{
+    display:flex!important;
+  }
+  .blobby-chat-members{
+    display:grid!important;
+  }
+  .blobby-chat-workspace{
+    grid-template-columns:180px minmax(0,1fr) 190px!important;
+  }
+  .blobby-chat-core{
+    min-width:0!important;
+    width:auto!important;
+  }
+  .blobby-chat-popover{
+    right:200px!important;
+  }
+  .blobby-chat-jump,
+  .blobby-chat-toast-stack{
+    right:200px!important;
+  }
+}
+
+@media (max-width:1040px) and (min-width:721px){
+  .blobby-chat-channels{
+    display:flex!important;
+  }
+  .blobby-chat-members{
+    display:none!important;
+  }
+  .blobby-chat-core{
+    min-width:0!important;
+    width:auto!important;
+  }
+  .blobby-chat-popover,
+  .blobby-chat-jump,
+  .blobby-chat-toast-stack{
+    right:14px!important;
+  }
+}
+
+/* Mobile ONLY by viewport width.
+   We intentionally do not use pointer:coarse because many Windows
+   touchscreen laptops report a coarse pointer on a desktop-sized screen. */
+@media (max-width:720px){
+  .blobby-chat-panel,
+  .blobby-chat-root[data-open="true"] .blobby-chat-panel{
+    position:fixed!important;
+    left:0!important;
+    top:0!important;
+    right:auto!important;
+    bottom:auto!important;
+    inset:auto!important;
+
+    width:100vw!important;
+    height:100svh!important;
+    border:0!important;
+    border-radius:0!important;
+  }
+
+  .blobby-chat-panel{
+    transform:translateY(10px) scale(.99)!important;
+  }
+
+  .blobby-chat-root[data-open="true"] .blobby-chat-panel{
+    transform:none!important;
+  }
+
+  .blobby-chat-workspace{
+    grid-template-columns:1fr!important;
+  }
+
+  .blobby-chat-channels,
+  .blobby-chat-members{
+    display:none!important;
+  }
+}

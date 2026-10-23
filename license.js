@@ -92,7 +92,7 @@
     if (appLoaded) return;
     appLoaded = true;
     const s = document.createElement('script');
-    s.src = './app.js?v=cwv13-20261023';
+    s.src = './app.js?v=cwv12-20261023';
     s.async = false;
     s.dataset.blobbyMain = 'true';
     s.onerror = () => {

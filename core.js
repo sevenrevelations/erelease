@@ -67,7 +67,7 @@ function defaults(){return {version:VERSION,prefs:{
  cursorStyle:'default',cursorSize:18,cursorColor:'#8da2ff',cursorSecondary:'#d6ddff',cursorGlow:35,cursorTrail:8,cursorTrailFade:70,cursorSmoothing:.2,cursorRGBSpeed:8,
  layoutPreset:'minimal',layoutGrid:clone(layoutPresets.minimal.grid),layoutHidden:clone(layoutPresets.minimal.hidden),layoutLocked:true,mobileAutoLayout:true,
  showSubtitle:true,showClock:true,showShortcuts:true,showRecent:true,showPreview:true,showBack:true,showForward:true,showRefresh:true,showHome:true,showExternal:true,
- restorePreviousTabs:true,showBookmarksBar:true,showBookmarkFavicons:true,showBookmarkText:true,compactTabs:true,bookmarkOpenBehavior:'current',confirmCloseMultiple:true,blockAds:true,adWhitelist:[],
+ restorePreviousTabs:true,showBookmarksBar:true,showBookmarkFavicons:true,showBookmarkText:true,compactTabs:true,bookmarkOpenBehavior:'current',confirmCloseMultiple:true,blockAds:true,
  clock24:false,clockSeconds:false,showDate:true,commandPalette:true,keyboardShortcuts:true
  },links:clone(defaultLinks),bookmarks:clone(defaultBookmarks),recent:[],tabs:[createTab()],activeTab:null,customThemes:[],profiles:[],savedLayouts:[]};}
 const effectKeys=['snow','rain','stars','particles','fireflies','orbs','aurora','fog','matrix','bubbles','shooting','waves','rgbGlow','dust','constellation','clouds','digitalGrid','neonHorizon','liquid','lightRays','spaceDust'];
@@ -83,8 +83,6 @@ function sanitizePrefs(raw={}){const d=defaults().prefs,p={...d,...raw};
  p.layoutGrid=sanitizeGrid(raw.layoutGrid||d.layoutGrid);p.layoutHidden=Array.isArray(raw.layoutHidden)?raw.layoutHidden.filter(x=>layoutItemIds.includes(x)):[];
  if(!['comfortable','default','compact','ultra'].includes(p.density))p.density='default';if(!['default','dot','ring','dotring','rgb','trail','sparkle','comet','glow','pixel','crosshair','blob'].includes(p.cursorStyle))p.cursorStyle='default';
  if(!['current','new'].includes(p.bookmarkOpenBehavior))p.bookmarkOpenBehavior='current';
- p.blockAds=p.blockAds!==false;
- p.adWhitelist=[...new Set((Array.isArray(raw.adWhitelist)?raw.adWhitelist:[]).map(x=>String(x||'').trim().toLowerCase()).filter(x=>/^(?:[a-z0-9-]+\.)*[a-z0-9-]+$/i.test(x)).slice(0,100))];
  return p;}
 function sanitizeLinks(items){return (Array.isArray(items)?items:[]).filter(x=>x&&typeof x.label==='string'&&safeUrl(x.url)).slice(0,40).map(x=>({label:x.label.slice(0,32),url:safeUrl(x.url),icon:String(x.icon||x.label.slice(0,1)).slice(0,4),folder:String(x.folder||'').slice(0,24)}));}
 function sanitizeRecent(items){return (Array.isArray(items)?items:[]).filter(x=>x&&safeUrl(x.url)).slice(0,30).map(x=>({label:String(x.label||titleFromUrl(x.url)).slice(0,80),url:safeUrl(x.url),time:Number(x.time)||Date.now()}));}
