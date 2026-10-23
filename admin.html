@@ -6,9 +6,9 @@
   <meta name="robots" content="noindex,nofollow">
   <title>blobby.vip Admin</title>
   <meta name="theme-color" content="#080a12">
-  <link rel="stylesheet" href="./admin/admin.css?v=stage14-adminfix-20261021">
-  <script src="./config.js?v=stage14-adminfix-20261021"></script>
-  <script type="module" src="./admin/admin.js?v=stage14-adminfix-20261021"></script>
+  <link rel="stylesheet" href="./admin/admin.css?v=stage14.3-20261023">
+  <script src="./config.js?v=stage14.3-20261023"></script>
+  <script type="module" src="./admin/admin.js?v=stage14.3-20261023"></script>
 </head>
 <body>
   <main class="page">
@@ -41,6 +41,14 @@
       </div>
       <p id="dashboardStatus" class="muted status" role="status"></p>
       <div id="licenseList" class="license-list"></div>
+      <section class="ga-admin-section" aria-labelledby="globalAnnouncementsHeading">
+        <div class="ga-admin-head">
+          <div><p class="eyebrow">Global announcements</p><h2 id="globalAnnouncementsHeading">Updates for everyone</h2><p class="muted">Separate from Chat announcements. Notices appear across Blobby after a user unlocks the app.</p></div>
+          <button id="newGlobalAnnouncement" class="primary" type="button">+ New announcement</button>
+        </div>
+        <p id="globalAnnouncementStatus" class="muted status" role="status"></p>
+        <div id="globalAnnouncementList" class="ga-admin-list"></div>
+      </section>
     </section>
   </main>
 
@@ -77,6 +85,29 @@
       <label id="editCustomWrap" hidden>Expires at<input id="editCustom" type="datetime-local"></label>
       <p id="editError" class="error" role="alert"></p>
       <footer><button value="cancel" formmethod="dialog">Cancel</button><button class="primary" type="submit">Save changes</button></footer>
+    </form>
+  </dialog>
+
+
+
+  <dialog id="globalAnnouncementDialog">
+    <form id="globalAnnouncementForm" class="dialog-card wide">
+      <header><div><p class="eyebrow">Global notice</p><h2 id="gaDialogTitle">New announcement</h2></div><button class="icon" value="cancel" formmethod="dialog" aria-label="Close">×</button></header>
+      <input id="gaId" type="hidden">
+      <div class="ga-form-grid">
+        <label class="ga-span-2">Title<input id="gaTitle" maxlength="120" required placeholder="Blobby update available"></label>
+        <label class="ga-span-2">Message<textarea id="gaMessage" maxlength="2000" rows="5" required placeholder="Tell users what changed and what they should know."></textarea></label>
+        <label>Type<select id="gaType"><option value="general">General</option><option value="update">Update</option><option value="maintenance">Maintenance</option><option value="important">Important</option></select></label>
+        <label>Display<select id="gaDisplay"><option value="popup">Popup</option><option value="banner">Banner</option></select></label>
+        <label>Version label<input id="gaVersion" maxlength="40" placeholder="1.6 (optional)"></label>
+        <label>Button text<input id="gaLinkLabel" maxlength="60" value="View update" placeholder="View update"></label>
+        <label class="ga-span-2">Update/document link<input id="gaLinkUrl" type="url" placeholder="https://..."></label>
+        <label>Starts<input id="gaStarts" type="datetime-local"></label>
+        <label>Ends <span class="muted">(optional)</span><input id="gaEnds" type="datetime-local"></label>
+        <label class="ga-active-row"><input id="gaActive" type="checkbox" checked> Published / active</label>
+      </div>
+      <p id="gaError" class="error" role="alert"></p>
+      <footer><button value="cancel" formmethod="dialog">Cancel</button><button id="gaSave" class="primary" type="submit">Publish</button></footer>
     </form>
   </dialog>
 
