@@ -1,6 +1,6 @@
 'use strict';
 (() => {
-  const VERSION='performance-ui-20261023-hotfix1';
+  const VERSION='performance-ui-20261023-hotfix2-contrast';
   const manifest={
     chat:{file:'chat.js',css:'chat.css',global:'BlobbyChat',extras:['activity.js']},
     profile:{file:'profile.js',css:'profile.css',global:'BlobbyProfile',depends:['chat']},
