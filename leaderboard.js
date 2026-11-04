@@ -13,7 +13,7 @@
   function createUI(){
     const root=el('div','blobby-leaderboard-root');root.id='blobbyLeaderboardRoot';root.dataset.open='false';
     root.innerHTML=`<div class="blobby-leaderboard-backdrop"></div><section class="blobby-leaderboard-shell" aria-label="Leaderboard" aria-hidden="true">
-      <header class="blobby-leaderboard-head"><div><span>ACTIVE TIME</span><h2>Leaderboard</h2><p>Ranked by active time on Blobby.</p></div><button class="blobby-leaderboard-close" type="button" aria-label="Close Leaderboard">×</button></header>
+      <header class="blobby-leaderboard-head"><div><span>ACTIVE TIME</span><h2>Leaderboard</h2><p>Ranked by active time on Blobby.</p></div><button class="blobby-leaderboard-close" type="button" aria-label="Close Leaderboard"><svg class="ui-icon" aria-hidden="true"><use href="#i-close"></use></svg></button></header>
       <div class="blobby-leaderboard-tabs"><button data-tab="weekly" class="active" type="button">This Week</button><button data-tab="allTime" type="button">All Time</button></div>
       <main class="blobby-leaderboard-body"><div class="blobby-leaderboard-list"></div>
         <aside class="blobby-leaderboard-me"><span>YOUR STATS</span><div class="blobby-leaderboard-me-grid"><div><small>Weekly rank</small><strong class="my-week-rank">—</strong><em class="my-week-time">0m</em></div><div><small>All-time rank</small><strong class="my-all-rank">—</strong><em class="my-all-time">0m</em></div></div>

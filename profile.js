@@ -41,7 +41,7 @@
           <div class="bp-top-actions">
             <button class="bp-members-btn" type="button">Browse members</button>
             <button class="bp-public-btn" type="button">Public profile</button>
-            <button class="bp-close" type="button" aria-label="Close profile">×</button>
+            <button class="bp-close" type="button" aria-label="Close profile"><svg class="ui-icon" aria-hidden="true"><use href="#i-close"></use></svg></button>
           </div>
         </header>
         <div class="bp-body">
@@ -115,7 +115,7 @@
               <section class="bp-section">
                 <div class="bp-section-title"><div><small>LINKS</small><h3>Profile links</h3></div><span>Up to 4</span></div>
                 <div class="bp-link-list"></div>
-                <button class="bp-add-link" type="button">＋ Add link</button>
+                <button class="bp-add-link" type="button"><svg class="ui-icon" aria-hidden="true"><use href="#i-plus"></use></svg> Add link</button>
               </section>
 
               <div class="bp-savebar"><span class="bp-message" role="status" aria-live="polite"></span><button class="bp-cancel" type="button">Reset</button><button class="bp-save" type="submit">Save changes</button></div>

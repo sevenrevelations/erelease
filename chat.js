@@ -79,7 +79,7 @@
     root.innerHTML=`
       <div class="blobby-chat-edge-zone" aria-hidden="true"></div>
       <button class="blobby-chat-handle" type="button" aria-label="Open Blobby Chat" title="Blobby Chat">
-        <span class="blobby-chat-handle-icon">💬</span><span class="blobby-chat-handle-label">Chat</span><span class="blobby-chat-unread" hidden>0</span>
+        <span class="blobby-chat-handle-icon"><svg class="ui-icon"><use href="#i-chat"/></svg></span><span class="blobby-chat-handle-label">Chat</span><span class="blobby-chat-unread" hidden>0</span>
       </button>
       <div class="blobby-chat-backdrop" aria-hidden="true"></div>
 
@@ -91,7 +91,7 @@
             <div class="blobby-chat-channel-group">
               <small>CHANNELS</small>
               <button class="blobby-chat-channel chat-channel-general active" type="button" data-channel="general"><b>#</b><span>general</span></button>
-              <button class="blobby-chat-channel chat-channel-announcements" type="button" data-channel="announcements"><b>📣</b><span>announcements</span><em>Owner only</em></button>
+              <button class="blobby-chat-channel chat-channel-announcements" type="button" data-channel="announcements"><b><svg class="ui-icon sm"><use href="#i-bell"/></svg></b><span>announcements</span><em>Owner only</em></button>
             </div>
 
             <div class="blobby-chat-channel-group">
@@ -119,15 +119,15 @@
               </div>
               <div class="blobby-chat-head-actions">
                 <button class="blobby-chat-presence-btn" type="button"><i class="blobby-chat-dot" data-state="offline"></i><span class="blobby-chat-online-count">0 online</span></button>
-                <button class="blobby-chat-icon-btn chat-settings" type="button" aria-label="Chat settings" title="Chat settings">⚙</button>
-                <button class="blobby-chat-icon-btn chat-close" type="button" aria-label="Close chat" title="Close chat">×</button>
+                <button class="blobby-chat-icon-btn chat-settings" type="button" aria-label="Chat settings" title="Chat settings"><svg class="ui-icon"><use href="#i-settings"/></svg></button>
+                <button class="blobby-chat-icon-btn chat-close" type="button" aria-label="Close chat" title="Close chat"><svg class="ui-icon"><use href="#i-close"/></svg></button>
               </div>
             </header>
 
             <div class="blobby-chat-roombar">
               <select class="blobby-chat-mobile-channel" aria-label="Choose chat channel">
                 <option value="general"># general</option>
-                <option value="announcements">📣 announcements</option>
+                <option value="announcements">announcements</option>
               </select>
               <div class="blobby-chat-room-description">The main Blobby community room</div>
               <span class="blobby-chat-room-note">Be respectful • no spam</span>
@@ -137,10 +137,10 @@
             <div class="blobby-chat-typing" aria-live="polite"></div>
 
             <div class="blobby-chat-composer" data-channel="general">
-              <div class="blobby-chat-replying" hidden><span></span><button type="button" aria-label="Cancel reply">×</button></div>
-              <div class="blobby-chat-announcement-lock" hidden><b>📣 Announcements are posting-locked.</b><span>Only the Blobby Owner can post. Everyone else can react only.</span></div>
+              <div class="blobby-chat-replying" hidden><span></span><button type="button" aria-label="Cancel reply"><svg class="ui-icon sm"><use href="#i-close"/></svg></button></div>
+              <div class="blobby-chat-announcement-lock" hidden><b>Announcements are posting-locked.</b><span>Only the Blobby Owner can post. Everyone else can react only.</span></div>
               <div class="blobby-chat-input-wrap"><textarea class="blobby-chat-input" rows="1" maxlength="2000" placeholder="Message #general…" aria-label="Message general chat"></textarea><button class="blobby-chat-send" type="button" disabled>Send</button></div>
-              <div class="blobby-chat-tools"><button class="blobby-chat-tool chat-emoji" type="button" title="Emoji">😀</button><button class="blobby-chat-tool chat-attach" type="button" title="Attach file">📎</button><button class="blobby-chat-tool chat-photo" type="button" title="Attach photo">📷</button><span class="blobby-chat-upload-state"></span><span class="blobby-chat-upload-progress" hidden><i></i></span></div>
+              <div class="blobby-chat-tools"><button class="blobby-chat-tool chat-emoji" type="button" title="Emoji" aria-label="Emoji"><svg class="ui-icon sm"><use href="#i-smile"/></svg></button><button class="blobby-chat-tool chat-attach" type="button" title="Attach file" aria-label="Attach file"><svg class="ui-icon sm"><use href="#i-paperclip"/></svg></button><button class="blobby-chat-tool chat-photo" type="button" title="Attach photo" aria-label="Attach photo"><svg class="ui-icon sm"><use href="#i-image"/></svg></button><span class="blobby-chat-upload-state"></span><span class="blobby-chat-upload-progress" hidden><i></i></span></div>
               <input class="chat-file-input" type="file" hidden accept=".pdf,.txt,.csv,.docx,.xlsx,.pptx,image/jpeg,image/png,image/webp">
               <input class="chat-photo-input" type="file" hidden accept="image/jpeg,image/png,image/webp">
             </div>
@@ -157,9 +157,9 @@
           </aside>
         </div>
 
-        <div class="blobby-chat-popover chat-emoji-popover" hidden><div class="blobby-chat-popover-head"><strong>Emoji</strong><button class="blobby-chat-icon-btn" type="button" data-close-popover>×</button></div><div class="blobby-chat-emoji-grid"></div></div>
+        <div class="blobby-chat-popover chat-emoji-popover" hidden><div class="blobby-chat-popover-head"><strong>Emoji</strong><button class="blobby-chat-icon-btn" type="button" data-close-popover><svg class="ui-icon"><use href="#i-close"/></svg></button></div><div class="blobby-chat-emoji-grid"></div></div>
 
-        <section class="blobby-chat-flyout chat-settings-flyout" aria-label="Chat settings"><div class="blobby-chat-flyout-head"><button class="blobby-chat-icon-btn flyout-back" type="button">←</button><strong>Chat settings</strong></div><div class="blobby-chat-flyout-body">
+        <section class="blobby-chat-flyout chat-settings-flyout" aria-label="Chat settings"><div class="blobby-chat-flyout-head"><button class="blobby-chat-icon-btn flyout-back" type="button" aria-label="Back"><svg class="ui-icon"><use href="#i-arrow-left"/></svg></button><strong>Chat settings</strong></div><div class="blobby-chat-flyout-body">
           <button class="blobby-chat-save chat-edit-profile" type="button">Edit profile & presence</button>
           <p class="blobby-chat-setting-note">Name, avatar, bio, status, presence, colors and links are managed in your Profile.</p>
           <label class="blobby-chat-setting-row"><span>Notification sounds</span><input class="chat-sounds" type="checkbox"></label>
@@ -168,12 +168,12 @@
           <button class="blobby-chat-save chat-save-settings" type="button">Save changes</button><div class="blobby-chat-error chat-settings-error"></div>
         </div></section>
 
-        <section class="blobby-chat-flyout chat-online-flyout" aria-label="Online users"><div class="blobby-chat-flyout-head"><button class="blobby-chat-icon-btn flyout-back" type="button">←</button><strong>Online now</strong></div><div class="blobby-chat-flyout-body chat-online-list"></div></section>
+        <section class="blobby-chat-flyout chat-online-flyout" aria-label="Online users"><div class="blobby-chat-flyout-head"><button class="blobby-chat-icon-btn flyout-back" type="button" aria-label="Back"><svg class="ui-icon"><use href="#i-arrow-left"/></svg></button><strong>Online now</strong></div><div class="blobby-chat-flyout-body chat-online-list"></div></section>
 
         <div class="blobby-chat-toast-stack"></div>
       </aside>
 
-      <div class="blobby-chat-lightbox" hidden><button type="button" aria-label="Close image">×</button><img alt="Shared image preview"></div>
+      <div class="blobby-chat-lightbox" hidden><button type="button" aria-label="Close image"><svg class="ui-icon"><use href="#i-close"/></svg></button><img alt="Shared image preview"></div>
     `;
     document.body.append(root);
 
@@ -265,7 +265,7 @@
     ui.generalChannel.classList.toggle('active',!announcements);
     ui.announcementsChannel.classList.toggle('active',announcements);
     ui.mobileChannel.value=announcements?'announcements':'general';
-    ui.roomIcon.textContent=announcements?'📣':'#';
+    ui.roomIcon.innerHTML=announcements?'<svg class="ui-icon sm"><use href="#i-bell"/></svg>':'#';
     ui.roomName.textContent=announcements?'announcements':'general';
     ui.roomDescription.textContent=announcements?'Official updates from Blobby':'The main Blobby community room';
     ui.roomNote.textContent=announcements?'Everyone can read • React only • Owner posts only':'Be respectful • no spam';
@@ -511,7 +511,7 @@
       const i=state.messages.findIndex(x=>x.id===payload.new.id); if(i>=0){state.messages[i]=payload.new;if(state.activeChannel==='general')renderMessages({preserveScroll:true});}
     });
     ch.on('postgres_changes',{event:'INSERT',schema:'public',table:'chat_announcements'},async payload=>{
-      const a=payload.new;if(state.announcements.some(x=>x.id===a.id))return;state.announcements.push(a);state.announcements=state.announcements.slice(-ANNOUNCEMENT_LIMIT);state.announcementsLoaded=true;await loadProfilesForMessages([a]);if(state.activeChannel==='announcements'){renderAnnouncements();requestAnimationFrame(()=>scrollBottom(true));}else if(state.open)toast('📣 New announcement posted.');
+      const a=payload.new;if(state.announcements.some(x=>x.id===a.id))return;state.announcements.push(a);state.announcements=state.announcements.slice(-ANNOUNCEMENT_LIMIT);state.announcementsLoaded=true;await loadProfilesForMessages([a]);if(state.activeChannel==='announcements'){renderAnnouncements();requestAnimationFrame(()=>scrollBottom(true));}else if(state.open)toast('New announcement posted.');
     });
     ch.on('postgres_changes',{event:'UPDATE',schema:'public',table:'chat_announcements'},payload=>{
       const i=state.announcements.findIndex(x=>x.id===payload.new.id);if(i>=0){state.announcements[i]=payload.new;if(state.activeChannel==='announcements')renderAnnouncements();}

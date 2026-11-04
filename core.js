@@ -20,16 +20,16 @@ const defaultBookmarks=[
 ];
 const layoutItemIds=['topbar','addressbar','hero','clock','shortcuts','recent','preview'];
 const defaultLayoutGrid={
- topbar:{col:16,row:1,w:5,h:1},
- hero:{col:2,row:2,w:8,h:2},
- clock:{col:16,row:2,w:4,h:2},
- addressbar:{col:5,row:5,w:12,h:1},
- shortcuts:{col:3,row:7,w:10,h:4},
- recent:{col:14,row:7,w:5,h:4},
- preview:{col:5,row:12,w:12,h:2}
+ topbar:{col:15,row:1,w:6,h:1},
+ hero:{col:3,row:3,w:7,h:2},
+ clock:{col:16,row:3,w:3,h:2},
+ addressbar:{col:3,row:6,w:11,h:1},
+ shortcuts:{col:3,row:8,w:11,h:5},
+ recent:{col:15,row:6,w:4,h:7},
+ preview:{col:3,row:14,w:16,h:1}
 };
 const layoutPresets={
- minimal:{name:'Minimal',grid:{topbar:{col:16,row:1,w:5,h:1},hero:{col:2,row:2,w:19,h:4},clock:{col:17,row:3,w:3,h:2},addressbar:{col:5,row:6,w:12,h:1},shortcuts:{col:5,row:8,w:12,h:3},recent:{col:5,row:11,w:12,h:2},preview:{col:5,row:13,w:12,h:2}},hidden:['clock','recent','preview']},
+ minimal:{name:'Minimal',grid:{topbar:{col:15,row:1,w:6,h:1},hero:{col:3,row:3,w:7,h:2},clock:{col:16,row:3,w:3,h:2},addressbar:{col:3,row:6,w:11,h:1},shortcuts:{col:3,row:8,w:11,h:5},recent:{col:15,row:6,w:4,h:7},preview:{col:3,row:14,w:16,h:1}},hidden:['clock','preview']},
  centered:{name:'Centered',grid:{topbar:{col:16,row:1,w:5,h:1},hero:{col:6,row:2,w:10,h:2},clock:{col:9,row:4,w:4,h:2},addressbar:{col:4,row:6,w:14,h:1},shortcuts:{col:5,row:8,w:12,h:3},recent:{col:6,row:11,w:10,h:2},preview:{col:5,row:13,w:12,h:2}},hidden:['preview']},
  compact:{name:'Compact',grid:{topbar:{col:16,row:1,w:5,h:1},hero:{col:2,row:2,w:7,h:1},clock:{col:17,row:2,w:3,h:1},addressbar:{col:3,row:4,w:16,h:1},shortcuts:{col:3,row:6,w:11,h:3},recent:{col:15,row:6,w:4,h:3},preview:{col:3,row:10,w:16,h:2}},hidden:['clock','preview']},
  floating:{name:'Floating',grid:{topbar:{col:16,row:1,w:5,h:1},hero:{col:2,row:2,w:7,h:2},clock:{col:17,row:3,w:3,h:2},addressbar:{col:5,row:5,w:12,h:1},shortcuts:{col:2,row:8,w:9,h:4},recent:{col:14,row:7,w:5,h:4},preview:{col:6,row:12,w:10,h:2}},hidden:[]},
@@ -58,11 +58,11 @@ function sanitizeGrid(raw){const out={};for(const id of layoutItemIds){const d=d
 function defaults(){return {version:VERSION,prefs:{
  theme:'midnight',engine:'google',customSearchPrefix:'',rememberRecent:true,autofocus:true,
  performance:false,adaptivePerformance:true,reducedMotion:false,animations:true,animationSpeed:1,hoverEffects:true,
- glass:true,blur:16,shadow:18,radius:18,panelOpacity:.7,density:'default',focusMode:false,focusKeepLogo:true,
+ glass:false,blur:0,shadow:6,radius:8,panelOpacity:.96,density:'compact',focusMode:false,focusKeepLogo:true,
  rgb:false,rgbMode:'cycle',rgbSpeed:9,rgbIntensity:60,rgbSaturation:100,rgbAreas:{logo:true,panels:false,address:true,buttons:false,ambient:true,cursor:false},
- backgroundMode:'gradient',backgroundSolid:'#080a12',backgroundGradient:'linear-gradient(145deg,#080a12 0%,#101724 55%,#171124 100%)',backgroundImage:'',backgroundBrightness:100,backgroundBlur:0,backgroundOpacity:100,backgroundOverlay:16,backgroundSize:'cover',backgroundPosition:'center',
- effectsMaster:true,effectDensity:40,effectSpeed:1,effectOpacity:.5,effectSize:1,effectDepth:'behindPanels',effectBlur:0,effectBrightness:100,
- effects:{snow:false,rain:false,stars:false,particles:false,fireflies:false,orbs:false,aurora:true,fog:false,matrix:false,bubbles:false,shooting:false,waves:false,rgbGlow:false,dust:false,constellation:false,clouds:false,digitalGrid:false,neonHorizon:false,liquid:false,lightRays:false,spaceDust:false},
+ backgroundMode:'solid',backgroundSolid:'#090b13',backgroundGradient:'linear-gradient(145deg,#090b13 0%,#0d1118 58%,#11131a 100%)',backgroundImage:'',backgroundBrightness:100,backgroundBlur:0,backgroundOpacity:100,backgroundOverlay:0,backgroundSize:'cover',backgroundPosition:'center',
+ effectsMaster:false,effectDensity:30,effectSpeed:1,effectOpacity:.35,effectSize:1,effectDepth:'deep',effectBlur:0,effectBrightness:100,
+ effects:{snow:false,rain:false,stars:false,particles:false,fireflies:false,orbs:false,aurora:false,fog:false,matrix:false,bubbles:false,shooting:false,waves:false,rgbGlow:false,dust:false,constellation:false,clouds:false,digitalGrid:false,neonHorizon:false,liquid:false,lightRays:false,spaceDust:false},
  rainLightning:false,rainGlass:false,
  cursorStyle:'default',cursorSize:18,cursorColor:'#8da2ff',cursorSecondary:'#d6ddff',cursorGlow:35,cursorTrail:8,cursorTrailFade:70,cursorSmoothing:.2,cursorRGBSpeed:8,
  layoutPreset:'minimal',layoutGrid:clone(layoutPresets.minimal.grid),layoutHidden:clone(layoutPresets.minimal.hidden),layoutLocked:true,mobileAutoLayout:true,
