@@ -304,3 +304,100 @@ html[data-app-mode="true"][data-base-ui-mode="browser"] #browserTabs{
   html[data-base-ui-mode="home"][data-compact-tabs="false"] .app-shell:not([data-layout-editing="true"]){padding-top:50px!important}
 }
 html[data-performance="true"][data-base-ui-mode="home"] #browserTabs{box-shadow:none!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
+
+
+/* Blobby Refined UI — deliberate desktop-app visual system
+   Visual-only layer. No bridge, chat, account, or navigation behavior changes. */
+:root{
+  --radius:10px;
+  --grid-gap:7px;
+  --panel-opacity:.94;
+  --shadow-strength:.10;
+  --blur:10px;
+  --ui-radius-sm:6px;
+  --ui-radius-md:8px;
+  --ui-radius-lg:10px;
+  --ui-border:color-mix(in srgb,var(--line) 72%,transparent);
+  --ui-surface:color-mix(in srgb,var(--panel) 97%,var(--bg));
+  --ui-surface-2:color-mix(in srgb,var(--panel2) 76%,var(--panel));
+}
+html,body{letter-spacing:0}
+.background-layer{transform:none}
+.background-layer::after{background:rgba(0,0,0,max(var(--bg-overlay),.24))}
+.ambient-layer{opacity:.42}
+html[data-rgb-glow=true] .ambient-layer::after{opacity:.28}
+
+/* App shell */
+.app-shell{padding:10px;gap:var(--grid-gap)}
+.shell-block{border-color:var(--ui-border);border-radius:var(--ui-radius-lg);background:var(--ui-surface);box-shadow:0 8px 24px rgba(0,0,0,calc(var(--shadow-strength)*.55))}
+.hero-card{padding:16px 18px;background:var(--ui-surface);border-color:var(--ui-border)}
+.hero-card h1{font-size:clamp(1.9rem,4.2vw,4rem);letter-spacing:-.045em;line-height:.96;font-weight:720}
+.hero-card h1 span{font-weight:720}
+.hero-card p{margin-top:6px;font-size:.72rem;letter-spacing:.015em;text-transform:none}
+.mode-chip{border-radius:var(--ui-radius-sm);background:var(--ui-surface-2);color:var(--muted);font-weight:650}
+.panel-card{padding:12px}
+.section-head{margin-bottom:8px}.eyebrow{font-size:.6rem;letter-spacing:.08em}.section-head h2,.preview-card h2{font-size:.9rem}
+.clock-card{padding:12px}.clock-card strong{font-size:clamp(1.35rem,2.5vw,2.25rem)}
+
+/* Browser chrome */
+.nav-button,.icon-button,.text-button,.go-button,.primary-button,.danger-button,.layout-toolbar button,.settings-actions button,.saved-item button,.theme-card,.layout-card{border-radius:var(--ui-radius-md)}
+.nav-button,.icon-button{width:34px;height:34px}.omnibox-wrap,.omnibox{min-height:32px}.omnibox{border-radius:var(--ui-radius-md);background:var(--ui-surface-2);padding-left:36px;box-shadow:none}
+.omnibox-wrap:focus-within .omnibox{box-shadow:0 0 0 2px color-mix(in srgb,var(--accent) 12%,transparent)}
+.go-button,.primary-button{font-weight:700}
+.browser-tabs{padding:3px 5px 0;gap:2px}.browser-tab{height:29px;border-radius:7px 7px 0 0;background:transparent}.browser-tab[aria-selected=true]{background:var(--ui-surface-2);box-shadow:none}.tab-favicon,.bookmark-favicon{border-radius:4px}.tab-close,.new-tab-button{border-radius:5px}.bookmarks-bar{padding:2px 5px}.bookmark-item,.bookmark-folder,.bookmark-add{border-radius:5px}
+.browser-menu,.bookmark-folder-menu{border-radius:var(--ui-radius-md);padding:4px;background:var(--ui-surface);box-shadow:0 12px 30px #0006}.browser-menu button,.bookmark-folder-menu button{border-radius:5px}
+
+/* Home content: fewer floating mini-cards */
+.shortcut-grid{gap:5px}.shortcut-tile{min-height:70px;border-radius:var(--ui-radius-md);background:transparent;padding:8px 6px}.shortcut-tile:hover{background:var(--ui-surface-2);border-color:transparent}.shortcut-icon{width:28px;height:28px;border-radius:7px;background:var(--ui-surface-2)}
+.recent-row{border-radius:var(--ui-radius-sm)}.preview-card{padding:11px 13px}.preview-icon{border-radius:var(--ui-radius-md)}
+
+/* Settings */
+.settings-dialog,.small-dialog,.command-dialog{border-radius:12px}
+.settings-shell,.dialog-content,.command-shell{border-radius:12px;background:var(--ui-surface)}
+.settings-header{min-height:58px;padding:10px 14px;border-bottom:1px solid var(--ui-border)}
+.settings-header h2{font-size:1rem}.settings-search-wrap{border-radius:var(--ui-radius-md);background:var(--ui-surface-2)}
+.settings-nav{padding:8px}.settings-nav button{border-radius:var(--ui-radius-sm)}
+.settings-panels{padding:16px 18px}.settings-group,.settings-section{border-radius:var(--ui-radius-md);box-shadow:none}
+.setting-row,.settings-row{border-radius:0}
+.settings-footer{padding:8px 14px}
+.performance-note,.bridge-card,.diagnostics{border-radius:var(--ui-radius-md);background:var(--ui-surface-2)}
+.dialog-content{padding:15px}.dialog-content input{border-radius:var(--ui-radius-md)}.dialog-actions button{border-radius:var(--ui-radius-sm)}
+.command-search{border-radius:var(--ui-radius-md)}.command-item{border-radius:var(--ui-radius-sm)}
+
+/* Sidebar: make it navigation, not a floating glass widget */
+.blobby-sidebar-rail{left:8px;width:44px;padding:6px 4px;border-radius:var(--ui-radius-lg);background:var(--ui-surface);box-shadow:0 8px 24px #0004}
+.blobby-sidebar-brand,.blobby-sidebar-button,.blobby-sidebar-close{width:34px;height:34px;min-height:34px;border-radius:var(--ui-radius-md)}
+.blobby-sidebar-brand{background:transparent;font-size:18px}.blobby-sidebar-button[data-active="true"]{background:var(--ui-surface-2)}
+.blobby-sidebar-button[data-active="true"]::before{left:-4px;top:8px;height:18px;box-shadow:none}
+.blobby-sidebar-panel{left:59px;top:8px;bottom:8px;border-radius:var(--ui-radius-lg);background:var(--ui-surface);box-shadow:0 16px 40px #0006}
+.blobby-sidebar-panel-head{min-height:54px;padding:8px 9px 8px 13px}.blobby-sidebar-eyebrow{font-size:8px;letter-spacing:.09em}.blobby-sidebar-panel-body{padding:10px;gap:8px}
+.blobby-sidebar-intro{padding:9px;border-radius:var(--ui-radius-md);background:transparent}.blobby-sidebar-intro>.blobby-sidebar-icon{border-radius:var(--ui-radius-md)}
+.blobby-sidebar-status-card{border-radius:var(--ui-radius-sm)}.blobby-sidebar-status-card>.blobby-sidebar-icon{border-radius:var(--ui-radius-sm)}
+
+/* Chat / DM / group chat: flatter, calmer messaging UI */
+.blobby-chat-panel{border-radius:12px!important;background:var(--ui-surface)!important;box-shadow:0 18px 55px #0008!important}
+.blobby-chat-workspace{grid-template-columns:188px minmax(0,1fr) 208px!important}
+.blobby-chat-channels,.blobby-chat-members{background:color-mix(in srgb,var(--bg) 76%,var(--panel))!important}
+.blobby-chat-core,.blobby-chat-head{background:var(--ui-surface)!important}
+.blobby-chat-community-title{padding:3px 7px 11px}.blobby-chat-community-title strong{font-size:14px}
+.blobby-chat-channel{height:32px;border-radius:var(--ui-radius-sm);padding:0 7px}.blobby-chat-channel:hover,.blobby-chat-channel.active{background:var(--ui-surface-2)}
+.blobby-chat-self{border-radius:var(--ui-radius-md);background:transparent}.blobby-chat-self:hover{background:var(--ui-surface-2)}
+.blobby-chat-head{height:48px}.blobby-chat-members-head{height:48px}.blobby-chat-roombar{background:color-mix(in srgb,var(--bg) 70%,var(--panel))!important}
+.blobby-chat-messages{padding:10px 12px 8px!important}.blobby-chat-msg{padding:6px 7px!important;border-radius:var(--ui-radius-sm)!important}.blobby-chat-msg:hover{background:color-mix(in srgb,var(--panel2) 38%,transparent)!important}
+.blobby-chat-owner-badge,.blobby-chat-mod-badge{border-radius:4px}.blobby-chat-reaction{border-radius:6px;background:transparent}
+.blobby-chat-msg-actions{border-radius:var(--ui-radius-sm);background:var(--ui-surface)!important;box-shadow:0 4px 14px #0005}
+.blobby-chat-composer{padding:8px 12px 11px!important;background:var(--ui-surface)!important}.blobby-chat-input-wrap{border-radius:var(--ui-radius-md)!important;background:var(--ui-surface-2)!important;padding:5px 6px!important}.blobby-chat-send{border-radius:var(--ui-radius-sm)!important}
+.blobby-chat-popover{border-radius:var(--ui-radius-md);background:var(--ui-surface);box-shadow:0 12px 32px #0007}.blobby-chat-flyout{background:var(--ui-surface);border-radius:10px 0 0 10px!important}.blobby-chat-field input,.blobby-chat-field select,.blobby-chat-field textarea{border-radius:var(--ui-radius-sm)}
+
+/* Profiles, DMs, groups, music and notices share the same restrained geometry. */
+[class*="profile-"][class*="card"],[class*="dm-"][class*="card"],[class*="group-"][class*="card"],[class*="music-"][class*="card"]{border-radius:var(--ui-radius-md)!important;box-shadow:none!important}
+[class*="profile-"][class*="panel"],[class*="dm-"][class*="panel"],[class*="group-"][class*="panel"],[class*="music-"][class*="panel"]{border-radius:12px!important;box-shadow:0 16px 44px #0007!important}
+
+/* Feedback */
+.toast{border-radius:var(--ui-radius-md);background:var(--ui-surface);backdrop-filter:none;box-shadow:0 10px 26px #0005}
+
+/* Keep motion purposeful. */
+@media(prefers-reduced-motion:no-preference){
+  .nav-button,.icon-button,.shortcut-tile,.browser-tab,.blobby-sidebar-button,.blobby-chat-channel{transition:background-color .12s ease,color .12s ease,border-color .12s ease}
+}
+
