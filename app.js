@@ -1,6 +1,7 @@
 'use strict';
 (() => {
-const C=BlobbyCore,T=BlobbyThemes,B=BlobbyBridge,L=BlobbyLayout,$=id=>document.getElementById(id),root=document.documentElement,shell=$('appShell');
+const C=window.BlobbyCore,T=window.BlobbyThemes,B=window.BlobbyBridge||{isAppInventor:()=>false,send:()=>{}},L=window.BlobbyLayout,$=id=>document.getElementById(id),root=document.documentElement,shell=$('appShell');
+if(!C||!T||!L||!shell){console.error('[blobby] startup blocked: missing core dependency',{core:!!C,themes:!!T,layout:!!L,shell:!!shell});return;}
 function read(key,fallback){try{const v=localStorage.getItem(key);return v===null?fallback:JSON.parse(v);}catch{return fallback;}}
 let state=C.migrate(read),p=state.prefs,storageOK=true,editingShortcut=-1,editingBookmarkId=null,importMode='theme',activeSettings='appearance',layoutSnapshot=null,pendingGrid=null,layoutUndo=[],layoutRedo=[],selectedLayoutId=null,clockTimer=0,saveTimer=0,lastUIHeight=null,browserOwnerTabId=null,tabDragId=null,bookmarkRenderKey='',uiExpanded=false,baseUIMode='home',overlayUIMode='',overlayReturnMode='home',activeManagedPanel='',lastSentAdBlock=null;
 state.tabs=C.sanitizeTabs(state.tabs);state.bookmarks=C.sanitizeBookmarks(state.bookmarks);if(!state.tabs.some(t=>t.id===state.activeTab))state.activeTab=state.tabs[0].id;if(!p.restorePreviousTabs){state.tabs=[C.createTab()];state.activeTab=state.tabs[0].id;}
@@ -18,9 +19,11 @@ try{
   localStorage.setItem(designKey,'1');
  }
 }catch{}
-const effects=new BlobbyEffects.EffectsEngine($('effectsCanvas'));
-const cursor=new BlobbyCursor.CursorEngine($('customCursor'));
+const effects=window.BlobbyEffects?.EffectsEngine?new window.BlobbyEffects.EffectsEngine($('effectsCanvas')):{configure(){},refresh(){}};
+const cursor=window.BlobbyCursor?.CursorEngine?new window.BlobbyCursor.CursorEngine($('customCursor')):{configure(){}};
 const lowEnd=((navigator.hardwareConcurrency||8)<=4)||((navigator.deviceMemory||8)<=4);
+// Place the home widgets immediately. This prevents CSS grid auto-placement if later startup work throws.
+try{L.apply(p,shell);}catch(err){console.error('[blobby] early layout apply failed',err);}
 
 function persistNow(){clearTimeout(saveTimer);saveTimer=0;state.prefs=p;try{localStorage.setItem(C.STORAGE_KEY,C.serialize(state));storageOK=true;$('saveStatus').textContent='Saved automatically';}catch{storageOK=false;$('saveStatus').textContent='Storage unavailable — session only';}}
 function save(){state.prefs=p;clearTimeout(saveTimer);saveTimer=setTimeout(persistNow,120);}
@@ -227,5 +230,5 @@ function cycleTab(delta=1){if(state.tabs.length<2)return;const i=state.tabs.find
 document.addEventListener('keydown',e=>{const typing=['INPUT','TEXTAREA','SELECT'].includes(document.activeElement.tagName),mod=e.ctrlKey||e.metaKey,key=e.key.toLowerCase(),dialogOpen=!!document.querySelector('dialog[open]');if(e.key==='Escape'){if($('browserMenu')&&!$('browserMenu').hidden)closeBrowserMenu();else if($('bookmarkFolderMenu')&&!$('bookmarkFolderMenu').hidden)closeBookmarkFolderMenu();else if($('bookmarkDialog').open)$('bookmarkDialog').close();else if($('commandDialog').open)$('commandDialog').close();else if($('settingsDialog').open)$('settingsDialog').close();return;}if(!p.keyboardShortcuts)return;if(mod&&key==='l'){e.preventDefault();focusOmnibox(true);}else if(mod&&key==='t'&&!dialogOpen){e.preventDefault();newTab();}else if(mod&&key==='w'&&!dialogOpen){e.preventDefault();closeTab();}else if(mod&&key==='tab'&&!dialogOpen){e.preventDefault();cycleTab(e.shiftKey?-1:1);}else if(mod&&key==='r'&&!dialogOpen){e.preventDefault();refresh();}else if(mod&&e.shiftKey&&key==='b'&&!dialogOpen){e.preventDefault();toggleBookmarksBar();}else if(e.altKey&&e.key==='ArrowLeft'&&!dialogOpen&&!typing){e.preventDefault();back();}else if(e.altKey&&e.key==='ArrowRight'&&!dialogOpen&&!typing){e.preventDefault();forward();}else if(mod&&e.key===','){e.preventDefault();openSettings();}else if(mod&&e.shiftKey&&key==='e'){e.preventDefault();startLayoutEdit();}else if(mod&&(key==='k'||e.key==='/')){e.preventDefault();openCommandPalette();}else if(e.key==='/'&&!typing&&!dialogOpen){e.preventDefault();focusOmnibox(true);}});
 document.addEventListener('visibilitychange',()=>effects.refresh());
 
-setBaseUIMode('home');makeSettings();apply();save();window.dispatchEvent(new CustomEvent('blobby:app-ready'));if(appMode())B.send('HOME');scheduleUIHeight(20);focusOmnibox();setTimeout(()=>{if(baseUIMode==='home'&&appMode()){syncBridgeBadge();B.send('HOME');scheduleUIHeight(0);}},650);
+setBaseUIMode('home');makeSettings();apply();root.dataset.blobbyReady='true';save();window.dispatchEvent(new CustomEvent('blobby:app-ready'));if(appMode())B.send('HOME');scheduleUIHeight(20);focusOmnibox();setTimeout(()=>{if(baseUIMode==='home'&&appMode()){syncBridgeBadge();B.send('HOME');scheduleUIHeight(0);}},650);
 })();
