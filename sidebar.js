@@ -170,9 +170,8 @@
 
   function onKeydown(e){if(e.key==='Escape'&&window.BlobbyPanels?.active?.()){e.preventDefault();window.BlobbyPanels.close();}}
 
-  function boot(){if(document.body.dataset.licenseState==='unlocked'&&window.BlobbyAppUI)build();}
+  function boot(){if(window.BlobbyAppUI)build();}
   window.addEventListener('blobby:app-ready',build,{once:true});
-  window.addEventListener('blobby:license-unlocked',()=>{if(window.BlobbyAppUI)build();});
   boot();
   window.BlobbySidebar=Object.freeze({open:id=>window.BlobbyPanels?.open(id||'hub'),close:()=>window.BlobbyPanels?.close(),state:()=>({ready,open:!!window.BlobbyPanels?.active?.(),panel:window.BlobbyPanels?.active?.()||''})});
 })();

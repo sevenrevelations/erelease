@@ -41,7 +41,7 @@
           <div class="bp-top-actions">
             <button class="bp-members-btn" type="button">Browse members</button>
             <button class="bp-public-btn" type="button">Public profile</button>
-            <button class="bp-close" type="button" aria-label="Close profile"><svg class="ui-icon" aria-hidden="true"><use href="#i-close"></use></svg></button>
+            <button class="bp-close" type="button" aria-label="Close profile">×</button>
           </div>
         </header>
         <div class="bp-body">
@@ -115,7 +115,7 @@
               <section class="bp-section">
                 <div class="bp-section-title"><div><small>LINKS</small><h3>Profile links</h3></div><span>Up to 4</span></div>
                 <div class="bp-link-list"></div>
-                <button class="bp-add-link" type="button"><svg class="ui-icon" aria-hidden="true"><use href="#i-plus"></use></svg> Add link</button>
+                <button class="bp-add-link" type="button">＋ Add link</button>
               </section>
 
               <div class="bp-savebar"><span class="bp-message" role="status" aria-live="polite"></span><button class="bp-cancel" type="button">Reset</button><button class="bp-save" type="submit">Save changes</button></div>
@@ -148,7 +148,7 @@
   async function fetchProfile(id,force=false){if(!force){const hit=cache.get(id);if(hit&&hit.until>Date.now())return normalizeProfile(hit.p);}const {supabase}=await ensureBackend();const {data,error}=await supabase.from('chat_profiles').select(PROFILE_FIELDS).eq('id',id).maybeSingle();if(error)throw error;if(!data)throw Error('Profile not found.');const p=normalizeProfile(data);cache.set(id,{p,until:Date.now()+120000});return p;}
 
   function setOpen(v){state.open=!!v;ui.root.dataset.open=String(state.open);ui.shell.setAttribute('aria-hidden',String(!state.open));ui.shell.inert=!state.open;}
-  async function open(profileId=''){if(document.body.dataset.licenseState!=='unlocked')return;build();closeOtherPanels();setOpen(true);appExpand();showLoading('Loading profile…');try{await ensureBackend();if(profileId&&profileId!==state.me.id)await showPublic(profileId);else await loadOwn();}catch(e){showLoading(friendlyError(e));}}
+  async function open(profileId=''){build();closeOtherPanels();setOpen(true);appExpand();showLoading('Loading profile…');try{await ensureBackend();if(profileId&&profileId!==state.me.id)await showPublic(profileId);else await loadOwn();}catch(e){showLoading(friendlyError(e));}}
   function closeOtherPanels(){if(window.BlobbyChat?.state?.().open)window.BlobbyChat.close();if(window.BlobbyDM?.state?.().open)window.BlobbyDM.close();if(window.BlobbyGroup?.state?.().open)window.BlobbyGroup.close();if(window.BlobbyLeaderboard?.state?.().open)window.BlobbyLeaderboard.close();if(window.BlobbyMusic?.state?.().open)window.BlobbyMusic.close();window.BlobbyPanels?.close?.();}
   function canLeaveEditor(){if(!state.dirty)return true;if(!confirm('Discard your unsaved profile changes?'))return false;state.dirty=false;state.draft=clone(state.saved);state.avatarFile=null;state.bannerFile=null;revokePreview('avatar');revokePreview('banner');return true;}
   function requestClose(){if(!state.open)return;if(!canLeaveEditor())return;close();}
@@ -191,6 +191,5 @@
   function renderMembers(){if(state.view!=='members')return;const term=String(ui.memberSearch.value||'').trim().toLowerCase();const rows=state.members.filter(p=>!term||`${p.display_name} ${p.username||''} ${p.bio||''}`.toLowerCase().includes(term)).slice(0,150);ui.membersGrid.replaceChildren();if(!rows.length){ui.membersGrid.append(el('div','bp-empty','No members match that search.'));return;}const frag=document.createDocumentFragment();for(const p of rows){const card=el('button','bp-member-card');card.type='button';const av=el('span','bp-member-avatar',initials(p.display_name));if(p.avatar_path)signed(p.avatar_path).then(url=>{if(url&&av.isConnected){av.textContent='';av.style.backgroundImage=`url("${url.replace(/"/g,'\\"')}")`;}});const copy=el('span','bp-member-copy');const name=el('strong','',p.display_name);applyNameStyle(name,p);copy.append(name,el('small','',p.username?`@${p.username}`:roleLabel(p.role)),el('span','',p.show_activity===false?'':(p.custom_status||statusLabel(p.status))));card.append(av,copy);card.onclick=()=>showPublic(p.id);frag.append(card);}ui.membersGrid.append(frag);}
 
   function statePublic(){return{open:state.open,view:state.view,dirty:state.dirty,profile:state.target?{id:state.target.id,displayName:state.target.display_name}:null};}
-  window.addEventListener('blobby:license-locked',()=>{state.backend=null;state.me=null;cache.clear();if(state.open)close();});
   window.BlobbyProfile=Object.freeze({open,close:requestClose,members:async()=>{if(!state.open)await open();await showMembers();},state:statePublic,cache:()=>[...cache.values()].map(x=>clone(x.p))});
 })();

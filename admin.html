@@ -6,17 +6,17 @@
   <meta name="robots" content="noindex,nofollow">
   <title>blobby.vip Admin</title>
   <meta name="theme-color" content="#080a12">
-  <link rel="stylesheet" href="./admin/admin.css?v=original-ui-rollback-20261023-1">
-  <script src="./config.js?v=original-ui-rollback-20261023-1"></script>
-  <script type="module" src="./admin/admin.js?v=original-ui-rollback-20261023-1"></script>
+  <link rel="stylesheet" href="./admin/admin.css?v=keyless-20261109-1">
+  <script src="./config.js?v=keyless-20261109-1"></script>
+  <script type="module" src="./admin/admin.js?v=keyless-20261109-1"></script>
 </head>
 <body>
   <main class="page">
     <section id="loginView" class="auth-card">
       <div class="brand"><span></span>blobby.vip</div>
       <p class="eyebrow">Administrator</p>
-      <h1>License control</h1>
-      <p class="muted">Sign in with your administrator account. License keys are separate from admin credentials.</p>
+      <h1>Announcements</h1>
+      <p class="muted">Sign in to publish and manage notices shown across Blobby.</p>
       <form id="loginForm" class="stack">
         <label>Email<input id="email" type="email" autocomplete="username" required></label>
         <label>Password<input id="password" type="password" autocomplete="current-password" required></label>
@@ -31,64 +31,16 @@
         <div class="top-actions"><span id="adminEmail"></span><button id="logoutButton" type="button">Sign out</button></div>
       </header>
       <div class="hero-row">
-        <div><p class="eyebrow">Licenses</p><h1>Access management</h1><p class="muted">One unique key can be active on one installation at a time.</p></div>
-        <button id="generateButton" class="primary" type="button">+ Generate key</button>
+        <div><p class="eyebrow">Global announcements</p><h1>Updates for everyone</h1><p class="muted">Publish notices, maintenance messages, and optional update links across Blobby.</p></div>
+        <button id="newGlobalAnnouncement" class="primary" type="button">+ New announcement</button>
       </div>
-      <div class="toolbar">
-        <input id="searchInput" type="search" placeholder="Search name or key hint" aria-label="Search licenses">
-        <select id="statusFilter" aria-label="Filter by status"><option value="all">All statuses</option><option value="unused">Unused</option><option value="active">Active</option><option value="expired">Expired</option><option value="revoked">Revoked</option></select>
+      <div class="toolbar" style="grid-template-columns:1fr auto">
+        <p id="globalAnnouncementStatus" class="muted status" role="status"></p>
         <button id="refreshButton" type="button">Refresh</button>
       </div>
-      <p id="dashboardStatus" class="muted status" role="status"></p>
-      <div id="licenseList" class="license-list"></div>
-      <section class="ga-admin-section" aria-labelledby="globalAnnouncementsHeading">
-        <div class="ga-admin-head">
-          <div><p class="eyebrow">Global announcements</p><h2 id="globalAnnouncementsHeading">Updates for everyone</h2><p class="muted">Separate from Chat announcements. Notices appear across Blobby after a user unlocks the app.</p></div>
-          <button id="newGlobalAnnouncement" class="primary" type="button">+ New announcement</button>
-        </div>
-        <p id="globalAnnouncementStatus" class="muted status" role="status"></p>
-        <div id="globalAnnouncementList" class="ga-admin-list"></div>
-      </section>
+      <div id="globalAnnouncementList" class="ga-admin-list"></div>
     </section>
   </main>
-
-  <dialog id="generateDialog">
-    <form id="generateForm" class="dialog-card">
-      <header><div><p class="eyebrow">New license</p><h2>Generate access key</h2></div><button class="icon" value="cancel" formmethod="dialog" aria-label="Close">×</button></header>
-      <label>Assigned name<input id="genName" maxlength="120" required placeholder="Alex's Chromebook"></label>
-      <label>Expiration<select id="genExpiration"><option value="lifetime">Lifetime</option><option value="1">1 day</option><option value="7">7 days</option><option value="30">30 days</option><option value="90">90 days</option><option value="custom">Custom date</option></select></label>
-      <label id="genStartsWrap" hidden>Duration begins<select id="genStarts"><option value="activation">First activation</option><option value="creation">Key creation</option></select></label>
-      <label id="genCustomWrap" hidden>Expires at<input id="genCustom" type="datetime-local"></label>
-      <label>Notes<textarea id="genNotes" maxlength="1000" rows="3" placeholder="Optional admin note"></textarea></label>
-      <p id="genError" class="error" role="alert"></p>
-      <footer><button value="cancel" formmethod="dialog">Cancel</button><button id="genSubmit" class="primary" type="submit">Generate</button></footer>
-    </form>
-  </dialog>
-
-  <dialog id="keyDialog">
-    <div class="dialog-card">
-      <header><div><p class="eyebrow">Access key created</p><h2>Copy this key now</h2></div></header>
-      <p class="warning">This plaintext key is shown only once. The database stores a secure derived value, not the reusable key.</p>
-      <code id="generatedKey" class="generated-key"></code>
-      <footer><button id="copyKey" class="primary" type="button">Copy key</button><button id="closeKey" type="button">Done</button></footer>
-    </div>
-  </dialog>
-
-  <dialog id="editDialog">
-    <form id="editForm" class="dialog-card">
-      <header><div><p class="eyebrow">License</p><h2 id="editTitle">Edit</h2></div><button class="icon" value="cancel" formmethod="dialog" aria-label="Close">×</button></header>
-      <input id="editId" type="hidden">
-      <label>Assigned name<input id="editName" maxlength="120" required></label>
-      <label>Notes<textarea id="editNotes" maxlength="1000" rows="3"></textarea></label>
-      <label>Expiration<select id="editExpiration"><option value="keep">Keep current expiration</option><option value="lifetime">Lifetime</option><option value="1">1 day</option><option value="7">7 days</option><option value="30">30 days</option><option value="90">90 days</option><option value="custom">Custom date</option></select></label>
-      <label id="editStartsWrap" hidden>Duration begins<select id="editStarts"><option value="activation">First activation</option><option value="creation">Creation / now</option></select></label>
-      <label id="editCustomWrap" hidden>Expires at<input id="editCustom" type="datetime-local"></label>
-      <p id="editError" class="error" role="alert"></p>
-      <footer><button value="cancel" formmethod="dialog">Cancel</button><button class="primary" type="submit">Save changes</button></footer>
-    </form>
-  </dialog>
-
-
 
   <dialog id="globalAnnouncementDialog">
     <form id="globalAnnouncementForm" class="dialog-card wide">
@@ -100,7 +52,7 @@
         <label>Type<select id="gaType"><option value="general">General</option><option value="update">Update</option><option value="maintenance">Maintenance</option><option value="important">Important</option></select></label>
         <label>Display<select id="gaDisplay"><option value="popup">Popup</option><option value="banner">Banner</option></select></label>
         <label>Version label<input id="gaVersion" maxlength="40" placeholder="1.6 (optional)"></label>
-        <label>Button text<input id="gaLinkLabel" maxlength="60" value="View update" placeholder="View update"></label>
+        <label>Button text<input id="gaLinkLabel" maxlength="60" value="Copy update link" placeholder="Copy update link"></label>
         <label class="ga-span-2">Update/document link<input id="gaLinkUrl" type="url" placeholder="https://..."></label>
         <label>Starts<input id="gaStarts" type="datetime-local"></label>
         <label>Ends <span class="muted">(optional)</span><input id="gaEnds" type="datetime-local"></label>
@@ -110,7 +62,5 @@
       <footer><button value="cancel" formmethod="dialog">Cancel</button><button id="gaSave" class="primary" type="submit">Publish</button></footer>
     </form>
   </dialog>
-
-  <dialog id="auditDialog"><div class="dialog-card wide"><header><div><p class="eyebrow">Audit trail</p><h2 id="auditTitle">License history</h2></div><button id="closeAudit" class="icon" type="button" aria-label="Close">×</button></header><div id="auditList" class="audit-list"></div></div></dialog>
 </body>
 </html>
