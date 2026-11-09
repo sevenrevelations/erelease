@@ -16,32 +16,83 @@
   <meta name="description" content="blobby.vip — a fast, customizable browser controller for MIT App Inventor.">
   <title>blobby.vip</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='18' fill='%238da2ff'/%3E%3Ctext x='17' y='47' font-size='48' font-family='Arial' font-weight='700' fill='%23080a12'%3Eb%3C/text%3E%3C/svg%3E">
-  <link rel="stylesheet" href="./style.css?v=original-ui-rollback-20261023-1">
-  <link rel="stylesheet" href="./sidebar.css?v=original-ui-rollback-20261023-1">
-  <link rel="stylesheet" href="./chat.css?v=original-ui-rollback-20261023-1">
-  <link rel="stylesheet" href="./profile.css?v=original-ui-rollback-20261023-1">
-  <link rel="stylesheet" href="./chat-shell-fix.css?v=original-ui-rollback-20261023-1">
-  <link rel="stylesheet" href="./dm.css?v=original-ui-rollback-20261023-1">
-  <link rel="stylesheet" href="./group.css?v=original-ui-rollback-20261023-1">
-  <link rel="stylesheet" href="./leaderboard.css?v=original-ui-rollback-20261023-1">
-  <link rel="stylesheet" href="./performance.css?v=original-ui-rollback-20261023-1">
-  <link rel="stylesheet" href="./global-notice.css?v=original-ui-rollback-20261023-1">
-  <script src="./core.js?v=original-ui-rollback-20261023-1"></script>
-  <script src="./performance.js?v=original-ui-rollback-20261023-1"></script>
-  <script src="./themes.js?v=original-ui-rollback-20261023-1"></script>
-  <script src="./browser-bridge.js?v=original-ui-rollback-20261023-1"></script>
-  <script src="./effects.js?v=original-ui-rollback-20261023-1"></script>
-  <script src="./cursor.js?v=original-ui-rollback-20261023-1"></script>
-  <script src="./layout.js?v=original-ui-rollback-20261023-1"></script>
-  <script src="./config.js?v=original-ui-rollback-20261023-1"></script>
-  <script src="./features.js?v=original-ui-rollback-20261023-1" defer></script>
-  <script src="./sidebar.js?v=original-ui-rollback-20261023-1" defer></script>
-  <script src="./app.js?v=keyless-20261109-1" defer></script>
-  <script src="./global-notice.js?v=original-ui-rollback-20261023-1" defer></script>
-  <script src="./chat.js?v=original-ui-rollback-20261023-1" defer></script>
-  <script src="./activity.js?v=original-ui-rollback-20261023-1" defer></script>
+  <link rel="stylesheet" href="./style.css?v=product-redesign-20261104-1">
+  <link rel="stylesheet" href="./sidebar.css?v=product-redesign-20261104-1">
+  <link rel="stylesheet" href="./license.css?v=product-redesign-20261104-1">
+  <link rel="stylesheet" href="./chat.css?v=product-redesign-20261104-1">
+  <link rel="stylesheet" href="./profile.css?v=product-redesign-20261104-1">
+  <link rel="stylesheet" href="./chat-shell-fix.css?v=product-redesign-20261104-1">
+  <link rel="stylesheet" href="./dm.css?v=product-redesign-20261104-1">
+  <link rel="stylesheet" href="./group.css?v=product-redesign-20261104-1">
+  <link rel="stylesheet" href="./leaderboard.css?v=product-redesign-20261104-1">
+  <link rel="stylesheet" href="./performance.css?v=product-redesign-20261104-1">
+  <link rel="stylesheet" href="./global-notice.css?v=product-redesign-20261104-1">
+  <script src="./core.js?v=product-redesign-20261104-1"></script>
+  <script src="./performance.js?v=product-redesign-20261104-1"></script>
+  <script src="./themes.js?v=product-redesign-20261104-1"></script>
+  <script src="./browser-bridge.js?v=product-redesign-20261104-1"></script>
+  <script src="./effects.js?v=product-redesign-20261104-1"></script>
+  <script src="./cursor.js?v=product-redesign-20261104-1"></script>
+  <script src="./layout.js?v=product-redesign-20261104-1"></script>
+  <script src="./config.js?v=product-redesign-20261104-1"></script>
+  <script src="./features.js?v=product-redesign-20261104-1" defer></script>
+  <script src="./sidebar.js?v=product-redesign-20261104-1" defer></script>
+  <script src="./license.js?v=product-redesign-20261104-1" defer></script>
+  <script src="./global-notice.js?v=product-redesign-20261104-1" defer></script>
+  <script src="./chat.js?v=product-redesign-20261104-1" defer></script>
+  <script src="./activity.js?v=product-redesign-20261104-1" defer></script>
 </head>
-<body>
+<body data-license-state="booting" data-license-ui="idle">
+  <svg class="ui-icon-sprite" aria-hidden="true">
+    <symbol id="i-command" viewBox="0 0 24 24"><path d="M9 6.5H6.5a2.5 2.5 0 1 1 2.5-2.5V20a2.5 2.5 0 1 1-2.5-2.5H17.5A2.5 2.5 0 1 1 15 20V4a2.5 2.5 0 1 1 2.5 2.5Z"/></symbol>
+    <symbol id="i-grid" viewBox="0 0 24 24"><rect x="4" y="4" width="6" height="6" rx="1"/><rect x="14" y="4" width="6" height="6" rx="1"/><rect x="4" y="14" width="6" height="6" rx="1"/><rect x="14" y="14" width="6" height="6" rx="1"/></symbol>
+    <symbol id="i-settings" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.1 13.3a7.6 7.6 0 0 0 0-2.6l2-1.5-2-3.4-2.5 1a8.6 8.6 0 0 0-2.2-1.3L14 3h-4l-.4 2.5a8.6 8.6 0 0 0-2.2 1.3l-2.5-1-2 3.4 2 1.5a7.6 7.6 0 0 0 0 2.6l-2 1.5 2 3.4 2.5-1a8.6 8.6 0 0 0 2.2 1.3L10 21h4l.4-2.5a8.6 8.6 0 0 0 2.2-1.3l2.5 1 2-3.4Z"/></symbol>
+    <symbol id="i-back" viewBox="0 0 24 24"><path d="m14.5 6-6 6 6 6"/></symbol>
+    <symbol id="i-forward" viewBox="0 0 24 24"><path d="m9.5 6 6 6-6 6"/></symbol>
+    <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 5v6h-6"/></symbol>
+    <symbol id="i-home" viewBox="0 0 24 24"><path d="M3.5 10.5 12 3.8l8.5 6.7v9H14v-5H10v5H3.5Z"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24"><circle cx="10.8" cy="10.8" r="6.6"/><path d="m16 16 4.2 4.2"/></symbol>
+    <symbol id="i-close" viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18"/></symbol>
+    <symbol id="i-star" viewBox="0 0 24 24"><path d="m12 3 2.7 5.5 6 .9-4.3 4.2 1 6-5.4-2.9-5.4 2.9 1-6-4.3-4.2 6-.9Z"/></symbol>
+    <symbol id="i-external" viewBox="0 0 24 24"><path d="M14 4h6v6M20 4l-9 9"/><path d="M18 13v6a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h6"/></symbol>
+    <symbol id="i-panel" viewBox="0 0 24 24"><rect x="3.5" y="4" width="17" height="16" rx="2"/><path d="M8.5 4v16"/></symbol>
+    <symbol id="i-menu" viewBox="0 0 24 24"><circle cx="12" cy="5" r="1" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1" fill="currentColor" stroke="none"/><circle cx="12" cy="19" r="1" fill="currentColor" stroke="none"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+    <symbol id="i-arrow-right" viewBox="0 0 24 24"><path d="M5 12h14M14 7l5 5-5 5"/></symbol>
+    <symbol id="i-chat" viewBox="0 0 24 24"><path d="M4 5.5h16v11H9l-5 3v-14Z"/></symbol>
+    <symbol id="i-bell" viewBox="0 0 24 24"><path d="M6.5 16.5h11l-1.5-2V10a4 4 0 0 0-8 0v4.5l-1.5 2Z"/><path d="M10 19a2.2 2.2 0 0 0 4 0"/></symbol>
+    <symbol id="i-smile" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M8.5 10h.01M15.5 10h.01M8.5 14c1 1.2 2.1 1.8 3.5 1.8s2.5-.6 3.5-1.8"/></symbol>
+    <symbol id="i-paperclip" viewBox="0 0 24 24"><path d="m8.5 12.5 6.8-6.8a3.2 3.2 0 0 1 4.5 4.5l-8.7 8.7a5 5 0 0 1-7.1-7.1l8.1-8.1"/></symbol>
+    <symbol id="i-image" viewBox="0 0 24 24"><rect x="3.5" y="4.5" width="17" height="15" rx="2"/><circle cx="9" cy="10" r="1.5"/><path d="m5 17 4.5-4 3 2.5 2.5-2 4 3.5"/></symbol>
+    <symbol id="i-arrow-left" viewBox="0 0 24 24"><path d="M19 12H5M10 7l-5 5 5 5"/></symbol>
+    <symbol id="i-music" viewBox="0 0 24 24"><path d="M9 18.5a3 3 0 1 1-3-3c.7 0 1.4.2 2 .7V6l11-2v11.5a3 3 0 1 1-1-2.2V7.1L9 8.7Z"/></symbol>
+    <symbol id="i-volume" viewBox="0 0 24 24"><path d="M5 9h4l4-4v14l-4-4H5Z"/><path d="M16 9a4 4 0 0 1 0 6M18.5 6.5a8 8 0 0 1 0 11"/></symbol>
+    <symbol id="i-play" viewBox="0 0 24 24"><path d="m9 6 9 6-9 6Z"/></symbol>
+    <symbol id="i-pause" viewBox="0 0 24 24"><path d="M9 6v12M15 6v12"/></symbol>
+    <symbol id="i-shuffle" viewBox="0 0 24 24"><path d="M4 7h3c5 0 5 10 10 10h3M17 14l3 3-3 3M4 17h3c2.2 0 3.5-1.9 4.7-4M16 7h4M17 4l3 3-3 3"/></symbol>
+    <symbol id="i-repeat" viewBox="0 0 24 24"><path d="M17 6H8a4 4 0 0 0-4 4v1M17 3l3 3-3 3M7 18h9a4 4 0 0 0 4-4v-1M7 21l-3-3 3-3"/></symbol>
+    <symbol id="i-list" viewBox="0 0 24 24"><path d="M9 6h11M9 12h11M9 18h11M4 6h.01M4 12h.01M4 18h.01"/></symbol>
+    <symbol id="i-library" viewBox="0 0 24 24"><path d="M5 4h4v16H5ZM11 4h4v16h-4ZM17 6h3v14h-3Z"/></symbol>
+    <symbol id="i-users" viewBox="0 0 24 24"><circle cx="9" cy="9" r="3"/><circle cx="17" cy="10" r="2.3"/><path d="M3.5 19c.5-3.2 2.4-5 5.5-5s5 1.8 5.5 5M14.5 15c2.8-.6 5 .8 6 3"/></symbol>
+    <symbol id="i-file" viewBox="0 0 24 24"><path d="M6 3.5h8l4 4V20H6Z"/><path d="M14 3.5V8h4"/></symbol>
+  </svg>
+  <section id="licenseGate" class="license-gate" aria-labelledby="licenseTitle">
+    <div class="license-card">
+      <div class="license-brand"><span class="license-brand-dot" aria-hidden="true"></span><span>blobby.vip</span></div>
+      <h1 id="licenseTitle">Welcome.</h1>
+      <p>Enter your access key to continue to blobby.vip.</p>
+      <form id="licenseForm" class="license-form" novalidate>
+        <label for="licenseKeyInput">Access key</label>
+        <input id="licenseKeyInput" class="license-key-input" type="text" inputmode="text" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="39" placeholder="BLOBBY-____-____-____-____" aria-describedby="licenseStatus licenseDetail">
+        <button id="licenseSubmit" class="license-submit" type="submit">Unlock blobby</button>
+      </form>
+      <div class="license-feedback" role="status" aria-live="polite">
+        <strong id="licenseStatus">Starting secure access…</strong>
+        <span id="licenseDetail"></span>
+      </div>
+      <div class="license-meta"><span>One key · one active installation</span><a id="licenseSupport" href="#" hidden>Contact admin</a></div>
+    </div>
+  </section>
   <div id="backgroundLayer" class="background-layer" aria-hidden="true"></div>
   <div id="ambientLayer" class="ambient-layer" aria-hidden="true">
     <div class="aurora-layer"></div><div class="fog-layer"></div><div class="wave-layer"></div><div class="cloud-layer"></div><div class="digital-grid-layer"></div><div class="neon-horizon-layer"></div><div class="liquid-layer"></div><div class="light-rays-layer"></div>
@@ -61,24 +112,24 @@
     <header id="topbar" class="shell-block utility-card" data-layout-item="topbar">
       <button class="drag-handle" type="button" aria-label="Move utility controls" title="Move">✥</button><button class="resize-handle" type="button" aria-label="Resize utility controls" title="Resize">⌟</button>
       <div class="utility-status"><span class="status-dot"></span><span id="bridgeBadge">Demo</span><span id="performanceBadge" class="mode-chip" hidden>Performance</span></div>
-      <div class="topbar-actions"><button id="commandButton" class="icon-button" type="button" title="Command palette" aria-label="Command palette">⌘</button><button id="layoutEditButton" class="icon-button" type="button" title="Edit layout" aria-label="Edit layout">▦</button><button id="settingsButton" class="icon-button" type="button" title="Settings" aria-label="Open settings">⚙</button></div>
+      <div class="topbar-actions"><button id="commandButton" class="icon-button" type="button" title="Command palette" aria-label="Command palette"><svg class="ui-icon"><use href="#i-command"/></svg></button><button id="layoutEditButton" class="icon-button" type="button" title="Edit layout" aria-label="Edit layout"><svg class="ui-icon"><use href="#i-grid"/></svg></button><button id="settingsButton" class="icon-button" type="button" title="Settings" aria-label="Open settings"><svg class="ui-icon"><use href="#i-settings"/></svg></button></div>
     </header>
 
     <section id="addressbarBlock" class="shell-block address-block" data-layout-item="addressbar">
       <button class="drag-handle" type="button" aria-label="Move search bar" title="Move">✥</button><button class="resize-handle" type="button" aria-label="Resize search bar" title="Resize">⌟</button>
       <form id="addressForm" class="address-form" role="search">
         <div class="nav-cluster" aria-label="Navigation">
-          <button id="backButton" class="nav-button" type="button" aria-label="Back" title="Back">←</button>
-          <button id="forwardButton" class="nav-button" type="button" aria-label="Forward" title="Forward">→</button>
-          <button id="refreshButton" class="nav-button" type="button" aria-label="Refresh" title="Refresh">↻</button>
-          <button id="homeButton" class="nav-button" type="button" aria-label="Home" title="Home">⌂</button>
+          <button id="backButton" class="nav-button" type="button" aria-label="Back" title="Back"><svg class="ui-icon"><use href="#i-back"/></svg></button>
+          <button id="forwardButton" class="nav-button" type="button" aria-label="Forward" title="Forward"><svg class="ui-icon"><use href="#i-forward"/></svg></button>
+          <button id="refreshButton" class="nav-button" type="button" aria-label="Refresh" title="Refresh"><svg class="ui-icon"><use href="#i-refresh"/></svg></button>
+          <button id="homeButton" class="nav-button" type="button" aria-label="Home" title="Home"><svg class="ui-icon"><use href="#i-home"/></svg></button>
         </div>
-        <div class="omnibox-wrap"><span class="omnibox-icon" aria-hidden="true">⌕</span><input id="addressBar" class="omnibox" aria-label="Search or enter address" placeholder="Search or enter a URL" autocomplete="off" spellcheck="false"><button id="clearAddressButton" class="omnibox-clear" type="button" aria-label="Clear address" title="Clear">×</button></div>
-        <button id="bookmarkPageButton" class="nav-button browser-only-control" type="button" aria-label="Bookmark this page" title="Bookmark this page">☆</button>
-        <button class="go-button" type="submit" aria-label="Go">Go</button>
-        <button id="externalButton" class="nav-button external-button" type="button" aria-label="Open externally" title="Open externally">↗</button>
-        <button id="sidebarBrowserButton" class="nav-button browser-only-control blobby-sidebar-browser-button" type="button" aria-label="Open Blobby sidebar" title="Blobby sidebar">◫</button>
-        <button id="browserMenuButton" class="nav-button browser-only-control" type="button" aria-label="Browser menu" title="Browser menu">⋮</button>
+        <div class="omnibox-wrap"><span class="omnibox-icon" aria-hidden="true"><svg class="ui-icon sm"><use href="#i-search"/></svg></span><input id="addressBar" class="omnibox" aria-label="Search or enter address" placeholder="Search or enter a URL" autocomplete="off" spellcheck="false"><button id="clearAddressButton" class="omnibox-clear" type="button" aria-label="Clear address" title="Clear"><svg class="ui-icon sm"><use href="#i-close"/></svg></button></div>
+        <button id="bookmarkPageButton" class="nav-button browser-only-control" type="button" aria-label="Bookmark this page" title="Bookmark this page"><svg class="ui-icon"><use href="#i-star"/></svg></button>
+        <button class="go-button" type="submit" aria-label="Go"><svg class="ui-icon"><use href="#i-arrow-right"/></svg></button>
+        <button id="externalButton" class="nav-button external-button" type="button" aria-label="Open externally" title="Open externally"><svg class="ui-icon"><use href="#i-external"/></svg></button>
+        <button id="sidebarBrowserButton" class="nav-button browser-only-control blobby-sidebar-browser-button" type="button" aria-label="Open Blobby sidebar" title="Blobby sidebar"><svg class="ui-icon"><use href="#i-panel"/></svg></button>
+        <button id="browserMenuButton" class="nav-button browser-only-control" type="button" aria-label="Browser menu" title="Browser menu"><svg class="ui-icon"><use href="#i-menu"/></svg></button>
       </form>
       <div id="browserMenu" class="browser-menu" hidden>
         <button id="menuNewTab" type="button">New tab <span>Ctrl+T</span></button>
@@ -97,7 +148,7 @@
 
     <section id="bookmarksBar" class="bookmarks-bar browser-only" aria-label="Bookmarks bar" hidden>
       <div id="bookmarkList" class="bookmark-list hide-scrollbar"></div>
-      <button id="addBookmarkButton" class="bookmark-add" type="button" aria-label="Add bookmark" title="Add bookmark">+</button>
+      <button id="addBookmarkButton" class="bookmark-add" type="button" aria-label="Add bookmark" title="Add bookmark"><svg class="ui-icon sm"><use href="#i-plus"/></svg></button>
       <div id="bookmarkFolderMenu" class="bookmark-folder-menu" hidden></div>
     </section>
 
@@ -123,7 +174,7 @@
 
     <section id="previewBlock" class="shell-block home-widget preview-card" data-layout-item="preview" hidden>
       <button class="drag-handle" type="button" aria-label="Move preview" title="Move">✥</button><button class="resize-handle" type="button" aria-label="Resize preview" title="Resize">⌟</button>
-      <div class="preview-icon">↗</div><div><span class="eyebrow">Desktop preview</span><h2 id="previewTitle">Ready to browse</h2><p id="previewUrl">MIT App Inventor opens the actual page in its browser WebViewer.</p></div><button id="previewExternal" class="go-button" type="button">Open</button>
+      <div class="preview-icon"><svg class="ui-icon"><use href="#i-external"/></svg></div><div><span class="eyebrow">Desktop preview</span><h2 id="previewTitle">Ready to browse</h2><p id="previewUrl">MIT App Inventor opens the actual page in its browser WebViewer.</p></div><button id="previewExternal" class="go-button" type="button">Open</button>
     </section>
 
     <aside id="layoutToolbar" class="layout-toolbar" hidden aria-label="Layout editor">
@@ -135,17 +186,17 @@
 
   <dialog id="settingsDialog" class="settings-dialog" aria-labelledby="settingsTitle">
     <div class="settings-shell">
-      <header class="settings-header"><div><span class="eyebrow">blobby.vip preferences</span><h2 id="settingsTitle">Settings</h2></div><div class="settings-header-actions"><div class="settings-search-wrap"><span>⌕</span><input id="settingsSearch" type="search" placeholder="Search settings" aria-label="Search settings"></div><button class="icon-button" data-close="settingsDialog" aria-label="Close settings">×</button></div></header>
+      <header class="settings-header"><div><span class="eyebrow">blobby.vip preferences</span><h2 id="settingsTitle">Settings</h2></div><div class="settings-header-actions"><div class="settings-search-wrap"><span><svg class="ui-icon sm"><use href="#i-search"/></svg></span><input id="settingsSearch" type="search" placeholder="Search settings" aria-label="Search settings"></div><button class="icon-button" data-close="settingsDialog" aria-label="Close settings"><svg class="ui-icon"><use href="#i-close"/></svg></button></div></header>
       <div class="settings-body"><nav id="settingsNav" class="settings-nav hide-scrollbar" aria-label="Settings categories"></nav><main id="settingsPanels" class="settings-panels hide-scrollbar"></main></div>
       <footer class="settings-footer"><span id="saveStatus">Saved automatically</span><button data-close="settingsDialog" class="go-button" type="button">Done</button></footer>
     </div>
   </dialog>
 
-  <dialog id="commandDialog" class="command-dialog" aria-labelledby="commandTitle"><div class="command-shell"><div class="command-search"><span>⌘</span><input id="commandSearch" autocomplete="off" placeholder="Type a command…" aria-label="Command search"></div><div id="commandList" class="command-list hide-scrollbar"></div><small>Enter to run · Esc to close</small></div></dialog>
+  <dialog id="commandDialog" class="command-dialog" aria-labelledby="commandTitle"><div class="command-shell"><div class="command-search"><span><svg class="ui-icon"><use href="#i-command"/></svg></span><input id="commandSearch" autocomplete="off" placeholder="Type a command…" aria-label="Command search"></div><div id="commandList" class="command-list hide-scrollbar"></div><small>Enter to run · Esc to close</small></div></dialog>
 
-  <dialog id="shortcutDialog" class="small-dialog" aria-labelledby="shortcutTitle"><form id="shortcutForm" class="dialog-content"><header class="dialog-title"><div><span class="eyebrow">Quick access</span><h2 id="shortcutTitle">Shortcut</h2></div><button class="icon-button" type="button" data-close="shortcutDialog" aria-label="Close">×</button></header><label>Name<input id="shortcutName" maxlength="32" required placeholder="YouTube"></label><label>Website<input id="shortcutUrl" required placeholder="youtube.com"></label><label>Folder<input id="shortcutFolder" maxlength="24" placeholder="Optional, e.g. Study"></label><label>Icon<input id="shortcutIcon" maxlength="4" placeholder="YT"></label><input id="shortcutIndex" type="hidden" value="-1"><p id="shortcutError" class="error" role="alert"></p><div class="dialog-actions"><button id="deleteShortcutButton" class="danger-button" type="button" hidden>Delete</button><span></span><button type="button" data-close="shortcutDialog">Cancel</button><button class="go-button" type="submit">Save</button></div></form></dialog>
+  <dialog id="shortcutDialog" class="small-dialog" aria-labelledby="shortcutTitle"><form id="shortcutForm" class="dialog-content"><header class="dialog-title"><div><span class="eyebrow">Quick access</span><h2 id="shortcutTitle">Shortcut</h2></div><button class="icon-button" type="button" data-close="shortcutDialog" aria-label="Close"><svg class="ui-icon"><use href="#i-close"/></svg></button></header><label>Name<input id="shortcutName" maxlength="32" required placeholder="YouTube"></label><label>Website<input id="shortcutUrl" required placeholder="youtube.com"></label><label>Folder<input id="shortcutFolder" maxlength="24" placeholder="Optional, e.g. Study"></label><label>Icon<input id="shortcutIcon" maxlength="4" placeholder="YT"></label><input id="shortcutIndex" type="hidden" value="-1"><p id="shortcutError" class="error" role="alert"></p><div class="dialog-actions"><button id="deleteShortcutButton" class="danger-button" type="button" hidden>Delete</button><span></span><button type="button" data-close="shortcutDialog">Cancel</button><button class="go-button" type="submit">Save</button></div></form></dialog>
 
-  <dialog id="bookmarkDialog" class="small-dialog" aria-labelledby="bookmarkTitle"><form id="bookmarkForm" class="dialog-content"><header class="dialog-title"><div><span class="eyebrow">Bookmarks</span><h2 id="bookmarkTitle">Bookmark</h2></div><button class="icon-button" type="button" data-close="bookmarkDialog" aria-label="Close">×</button></header><label>Name<input id="bookmarkName" maxlength="48" required placeholder="Example"></label><label>Website<input id="bookmarkUrl" required placeholder="https://example.com"></label><label>Folder<input id="bookmarkFolder" maxlength="32" placeholder="Optional folder"></label><label>Icon<input id="bookmarkIcon" maxlength="4" placeholder="E"></label><p id="bookmarkError" class="error" role="alert"></p><div class="dialog-actions"><button id="deleteBookmarkButton" class="danger-button" type="button" hidden>Delete</button><span></span><button type="button" data-close="bookmarkDialog">Cancel</button><button class="go-button" type="submit">Save</button></div></form></dialog>
+  <dialog id="bookmarkDialog" class="small-dialog" aria-labelledby="bookmarkTitle"><form id="bookmarkForm" class="dialog-content"><header class="dialog-title"><div><span class="eyebrow">Bookmarks</span><h2 id="bookmarkTitle">Bookmark</h2></div><button class="icon-button" type="button" data-close="bookmarkDialog" aria-label="Close"><svg class="ui-icon"><use href="#i-close"/></svg></button></header><label>Name<input id="bookmarkName" maxlength="48" required placeholder="Example"></label><label>Website<input id="bookmarkUrl" required placeholder="https://example.com"></label><label>Folder<input id="bookmarkFolder" maxlength="32" placeholder="Optional folder"></label><label>Icon<input id="bookmarkIcon" maxlength="4" placeholder="E"></label><p id="bookmarkError" class="error" role="alert"></p><div class="dialog-actions"><button id="deleteBookmarkButton" class="danger-button" type="button" hidden>Delete</button><span></span><button type="button" data-close="bookmarkDialog">Cancel</button><button class="go-button" type="submit">Save</button></div></form></dialog>
 
   <dialog id="promptDialog" class="small-dialog" aria-labelledby="promptTitle"><form id="promptForm" class="dialog-content"><header class="dialog-title"><div><span class="eyebrow" id="promptEyebrow">blobby.vip</span><h2 id="promptTitle">Name</h2></div></header><p id="promptDetail" class="muted"></p><label id="promptLabel">Name<input id="promptInput" maxlength="48"></label><div class="dialog-actions"><span></span><button id="promptCancel" type="button">Cancel</button><button id="promptAccept" class="go-button" type="submit">Save</button></div></form></dialog>
 

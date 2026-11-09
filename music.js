@@ -54,6 +54,9 @@
     return n;
   };
 
+  const iconHTML = name => `<svg class="ui-icon" aria-hidden="true"><use href="#i-${name}"></use></svg>`;
+  const setIcon = (node,name) => { if(node) node.innerHTML=iconHTML(name); };
+
   const fmt = seconds => {
     seconds = Math.max(0, Math.floor(Number(seconds) || 0));
     return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
@@ -314,7 +317,7 @@
       <section class="blobby-music-shell" aria-hidden="true" aria-label="Blobby Music">
         <aside class="bm-side">
           <div class="bm-brand">
-            <div class="bm-brand-mark">♫</div>
+            <div class="bm-brand-mark"><svg class="ui-icon" aria-hidden="true"><use href="#i-music"></use></svg></div>
             <div>
               <small>BLOBBY</small>
               <strong>Music</strong>
@@ -323,16 +326,16 @@
 
           <nav class="bm-nav" aria-label="Music navigation">
             <button type="button" data-view="search" class="active">
-              <span>⌕</span><span>Search</span>
+              <span><svg class="ui-icon" aria-hidden="true"><use href="#i-search"></use></svg></span><span>Search</span>
             </button>
             <button type="button" data-view="library">
-              <span>≡</span><span>Your Library</span>
+              <span>${iconHTML('library')}</span><span>Your Library</span>
             </button>
             <button type="button" data-view="playlists">
-              <span>▤</span><span>Playlists</span>
+              <span>${iconHTML('list')}</span><span>Playlists</span>
             </button>
             <button type="button" data-view="local">
-              <span>＋</span><span>Local Music</span>
+              <span><svg class="ui-icon" aria-hidden="true"><use href="#i-plus"></use></svg></span><span>Local Music</span>
             </button>
           </nav>
 
@@ -354,16 +357,16 @@
 
           <div class="bm-side-spacer"></div>
 
-          <button class="bm-close" type="button" aria-label="Close Music">× Close</button>
+          <button class="bm-close" type="button" aria-label="Close Music"><svg class="ui-icon" aria-hidden="true"><use href="#i-close"></use></svg><span>Close</span></button>
         </aside>
 
         <section class="bm-main">
           <header class="bm-topbar">
             <div class="bm-search-wrap">
-              <span class="bm-search-icon">⌕</span>
+              <span class="bm-search-icon"><svg class="ui-icon" aria-hidden="true"><use href="#i-search"></use></svg></span>
               <input class="bm-search" type="search" autocomplete="off" spellcheck="false"
                 placeholder="Search songs, artists, albums...">
-              <button class="bm-search-clear" type="button" aria-label="Clear search" hidden>×</button>
+              <button class="bm-search-clear" type="button" aria-label="Clear search" hidden><svg class="ui-icon" aria-hidden="true"><use href="#i-close"></use></svg></button>
             </div>
 
             <select class="bm-provider" aria-label="Music provider">
@@ -500,11 +503,11 @@
 
             <div class="bm-player-center">
               <div class="bm-player-buttons">
-                <button type="button" data-player="shuffle" title="Shuffle">⤨</button>
-                <button type="button" data-player="prev" title="Previous">‹</button>
-                <button type="button" data-player="play" class="primary" title="Play">▶</button>
-                <button type="button" data-player="next" title="Next">›</button>
-                <button type="button" data-player="repeat" title="Repeat">↻</button>
+                <button type="button" data-player="shuffle" title="Shuffle">${iconHTML('shuffle')}</button>
+                <button type="button" data-player="prev" title="Previous">${iconHTML('back')}</button>
+                <button type="button" data-player="play" class="primary" title="Play">${iconHTML('play')}</button>
+                <button type="button" data-player="next" title="Next">${iconHTML('forward')}</button>
+                <button type="button" data-player="repeat" title="Repeat">${iconHTML('repeat')}</button>
               </div>
               <div class="bm-progress-row">
                 <span class="bm-current">0:00</span>
@@ -518,7 +521,7 @@
                 <div id="blobbyMusicYoutubePlayer"></div>
               </div>
               <label class="bm-volume">
-                <span>🔊</span>
+                <svg class="ui-icon" aria-hidden="true"><use href="#i-volume"></use></svg>
                 <input type="range" min="0" max="100" value="80">
               </label>
             </div>
@@ -528,7 +531,7 @@
 
       <div class="bm-dialog-layer" hidden>
         <section class="bm-dialog" role="dialog" aria-modal="true" aria-labelledby="bmDialogTitle">
-          <button class="bm-dialog-close" type="button" aria-label="Close">×</button>
+          <button class="bm-dialog-close" type="button" aria-label="Close"><svg class="ui-icon" aria-hidden="true"><use href="#i-close"></use></svg></button>
           <div class="bm-playlist-editor">
             <small>PLAYLIST</small>
             <h3 id="bmDialogTitle" class="bm-dialog-title">Create playlist</h3>
@@ -560,8 +563,8 @@
         <div class="bm-mini-art">♫</div>
         <span><small>NOW PLAYING</small><strong>Nothing playing</strong></span>
       </button>
-      <button class="bm-mini-play" type="button" aria-label="Play">▶</button>
-      <button class="bm-mini-next" type="button" aria-label="Next">›</button>
+      <button class="bm-mini-play" type="button" aria-label="Play">${iconHTML('play')}</button>
+      <button class="bm-mini-next" type="button" aria-label="Next">${iconHTML('forward')}</button>
     `;
 
     document.body.append(root, mini);
@@ -779,7 +782,10 @@
       else close();
     });
 
-
+    window.addEventListener('blobby:license-locked', () => {
+      pauseEverything();
+      close();
+    });
 
     setView('search');
     ensurePlaylistsLoaded().catch(() => { state.playlistsReady = true; });
@@ -1888,12 +1894,13 @@
   }
 
   function renderPlayerControls() {
-    ui.play.textContent = state.playing ? '❚❚' : '▶';
-    ui.miniPlay.textContent = state.playing ? '❚❚' : '▶';
+    setIcon(ui.play,state.playing?'pause':'play');
+    setIcon(ui.miniPlay,state.playing?'pause':'play');
 
     ui.shuffle.classList.toggle('active', state.shuffle);
     ui.repeat.classList.toggle('active', state.repeat !== 'off');
-    ui.repeat.textContent = state.repeat === 'one' ? '↻¹' : '↻';
+    setIcon(ui.repeat,'repeat');
+    ui.repeat.dataset.mode=state.repeat;
     ui.repeat.title = `Repeat: ${state.repeat}`;
   }
 
@@ -2007,6 +2014,7 @@
   }
 
   function open() {
+    if (document.body.dataset.licenseState !== 'unlocked') return;
     if (!ui.root) build();
 
     if (window.BlobbyChat?.state?.().open) window.BlobbyChat.close();

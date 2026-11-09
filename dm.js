@@ -39,7 +39,7 @@
   function dayKey(v){const d=new Date(v);return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;}
   function dayLabel(v){const d=new Date(v),now=new Date(),y=new Date(Date.now()-86400000);if(dayKey(d)===dayKey(now))return'Today';if(dayKey(d)===dayKey(y))return'Yesterday';return d.toLocaleDateString([],{month:'short',day:'numeric',year:d.getFullYear()===now.getFullYear()?undefined:'numeric'});}
   function friendlyError(e){const s=String(e?.message||e||'');if(/dm privacy nobody/i.test(s))return'This person is not accepting new direct messages.';if(/dm privacy shared groups/i.test(s))return'This person only accepts new DMs from people in shared groups.';if(/Unable to start conversation|block/i.test(s))return'You cannot message this person right now.';if(/muted/i.test(s))return'You are currently timed out from sending messages.';if(/banned/i.test(s))return'Your chat access is banned.';if(/row-level security|policy/i.test(s))return'That action is not allowed.';return s||'Something went wrong.';}
-  function previewMessage(m){if(!m)return'No messages yet';if(m.deleted_at)return'Message deleted';if(m.body)return m.body.replace(/\s+/g,' ').slice(0,80);if(m.message_type==='image')return'📷 Photo';if(m.message_type==='file')return`📎 ${m.attachment_name||'File'}`;return'Message';}
+  function previewMessage(m){if(!m)return'No messages yet';if(m.deleted_at)return'Message deleted';if(m.body)return m.body.replace(/\s+/g,' ').slice(0,80);if(m.message_type==='image')return'Photo';if(m.message_type==='file')return m.attachment_name||'File';return'Message';}
   function debounce(fn,ms){let t=0;return(...args)=>{clearTimeout(t);t=setTimeout(()=>fn(...args),ms);};}
 
   function toast(text){if(!ui.toasts)return;const n=el('div','blobby-dm-toast',text);ui.toasts.append(n);setTimeout(()=>n.remove(),2600);}
@@ -54,32 +54,32 @@
         <aside class="blobby-dm-inbox">
           <header class="blobby-dm-inbox-head">
             <div><span>PRIVATE</span><strong>Direct Messages</strong></div>
-            <div class="blobby-dm-head-actions"><button class="blobby-dm-new" type="button" title="New message" aria-label="New message">＋</button><button class="blobby-dm-close" type="button" title="Close DMs" aria-label="Close DMs">×</button></div>
+            <div class="blobby-dm-head-actions"><button class="blobby-dm-new" type="button" title="New message" aria-label="New message"><svg class="ui-icon" aria-hidden="true"><use href="#i-plus"></use></svg></button><button class="blobby-dm-close" type="button" title="Close DMs" aria-label="Close DMs"><svg class="ui-icon" aria-hidden="true"><use href="#i-close"></use></svg></button></div>
           </header>
-          <label class="blobby-dm-search"><span>⌕</span><input type="search" placeholder="Search conversations" autocomplete="off"></label>
+          <label class="blobby-dm-search"><svg class="ui-icon" aria-hidden="true"><use href="#i-search"></use></svg><input type="search" placeholder="Search conversations" autocomplete="off"></label>
           <div class="blobby-dm-list hide-scrollbar"></div>
           <div class="blobby-dm-picker" hidden>
-            <div class="blobby-dm-picker-head"><strong>New message</strong><button type="button" aria-label="Close people picker">×</button></div>
-            <label class="blobby-dm-search"><span>⌕</span><input type="search" placeholder="Find a person" autocomplete="off"></label>
+            <div class="blobby-dm-picker-head"><strong>New message</strong><button type="button" aria-label="Close people picker"><svg class="ui-icon" aria-hidden="true"><use href="#i-close"></use></svg></button></div>
+            <label class="blobby-dm-search"><svg class="ui-icon" aria-hidden="true"><use href="#i-search"></use></svg><input type="search" placeholder="Find a person" autocomplete="off"></label>
             <div class="blobby-dm-people hide-scrollbar"></div>
           </div>
         </aside>
         <main class="blobby-dm-thread" data-empty="true">
-          <div class="blobby-dm-empty"><div class="blobby-dm-empty-icon">✉</div><strong>Your messages</strong><span>Choose a conversation or start a new one.</span><button class="blobby-dm-empty-new" type="button">New message</button></div>
+          <div class="blobby-dm-empty"><div class="blobby-dm-empty-icon"><svg class="ui-icon" aria-hidden="true"><use href="#i-chat"></use></svg></div><strong>Your messages</strong><span>Choose a conversation or start a new one.</span><button class="blobby-dm-empty-new" type="button">New message</button></div>
           <div class="blobby-dm-thread-ui" hidden>
-            <header class="blobby-dm-thread-head"><button class="blobby-dm-back" type="button" aria-label="Back to conversations">←</button><div class="blobby-dm-thread-person"></div><div class="blobby-dm-thread-actions"><button class="blobby-dm-block" type="button">Block</button></div></header>
+            <header class="blobby-dm-thread-head"><button class="blobby-dm-back" type="button" aria-label="Back to conversations"><svg class="ui-icon" aria-hidden="true"><use href="#i-arrow-left"></use></svg></button><div class="blobby-dm-thread-person"></div><div class="blobby-dm-thread-actions"><button class="blobby-dm-block" type="button">Block</button></div></header>
             <div class="blobby-dm-messages hide-scrollbar" role="log" aria-live="polite"></div>
             <div class="blobby-dm-composer">
-              <div class="blobby-dm-replying" hidden><span></span><button type="button" aria-label="Cancel reply">×</button></div>
+              <div class="blobby-dm-replying" hidden><span></span><button type="button" aria-label="Cancel reply"><svg class="ui-icon" aria-hidden="true"><use href="#i-close"></use></svg></button></div>
               <div class="blobby-dm-input-wrap"><textarea rows="1" maxlength="2000" placeholder="Message…" aria-label="Direct message"></textarea><button class="blobby-dm-send" type="button" disabled>Send</button></div>
-              <div class="blobby-dm-tools"><button class="blobby-dm-emoji" type="button" title="React / emoji">😀</button><button class="blobby-dm-attach" type="button" title="Attach file">📎</button><button class="blobby-dm-photo" type="button" title="Attach photo">📷</button><span class="blobby-dm-upload-state"></span><span class="blobby-dm-upload-progress" hidden><i></i></span></div>
+              <div class="blobby-dm-tools"><button class="blobby-dm-emoji" type="button" title="React / emoji"><svg class="ui-icon" aria-hidden="true"><use href="#i-smile"></use></svg></button><button class="blobby-dm-attach" type="button" title="Attach file"><svg class="ui-icon" aria-hidden="true"><use href="#i-paperclip"></use></svg></button><button class="blobby-dm-photo" type="button" title="Attach photo"><svg class="ui-icon" aria-hidden="true"><use href="#i-image"></use></svg></button><span class="blobby-dm-upload-state"></span><span class="blobby-dm-upload-progress" hidden><i></i></span></div>
               <input class="blobby-dm-file-input" type="file" hidden accept=".pdf,.txt,.csv,.docx,.xlsx,.pptx,image/jpeg,image/png,image/webp">
               <input class="blobby-dm-photo-input" type="file" hidden accept="image/jpeg,image/png,image/webp">
             </div>
           </div>
         </main>
         <div class="blobby-dm-toast-stack"></div>
-        <div class="blobby-dm-lightbox" hidden><button type="button" aria-label="Close image">×</button><img alt="Shared image preview"></div>
+        <div class="blobby-dm-lightbox" hidden><button type="button" aria-label="Close image"><svg class="ui-icon" aria-hidden="true"><use href="#i-close"></use></svg></button><img alt="Shared image preview"></div>
       </section>`;
     document.body.append(root);
     ui={
@@ -96,6 +96,7 @@
     ui.fileInput.onchange=()=>{const f=ui.fileInput.files?.[0];ui.fileInput.value='';if(f)uploadAndSend(f,false);};ui.photoInput.onchange=()=>{const f=ui.photoInput.files?.[0];ui.photoInput.value='';if(f)uploadAndSend(f,true);};
     ui.lightbox.onclick=e=>{if(e.target===ui.lightbox||e.target.tagName==='BUTTON')ui.lightbox.hidden=true;};
     document.addEventListener('keydown',e=>{if(e.key==='Escape'&&state.open){if(!ui.picker.hidden){closePicker();return;}closeDM();}});
+    window.addEventListener('blobby:license-locked',disconnectDM);
     window.addEventListener('blobby:profile-updated',e=>{const p=e.detail?.profile;if(!p?.id)return;state.profiles.set(p.id,{...(state.profiles.get(p.id)||{}),...p});if(p.id===currentProfileId())state.profile={...state.profile,...p};if(state.open){renderConversationList();renderPeople();if(state.activeId)renderThreadHead();}});
   }
 
@@ -113,6 +114,7 @@
   }
 
   async function openDM(){
+    if(document.body.dataset.licenseState!=='unlocked')return;
     if(!ui.root)createUI();
     if(window.BlobbyChat?.state?.().open)window.BlobbyChat.close();
     state.open=true;ui.root.dataset.open='true';ui.shell.setAttribute('aria-hidden','false');document.documentElement.dataset.dmOpen='true';appExpand();
@@ -190,7 +192,7 @@
   function appendIdentity(parent,p){if(p?.role==='owner')parent.append(el('span','blobby-dm-owner','[¥]'));else if(p?.role==='admin')parent.append(el('span','blobby-dm-mod','[ADMIN]'));else if(p?.role==='moderator')parent.append(el('span','blobby-dm-mod','[MOD]'));parent.append(document.createTextNode(p?.display_name||'Unknown'));}
   function statusLabel(s){return s==='away'?'Away':s==='dnd'?'Do Not Disturb':s==='invisible'?'Offline':'Online';}
   function bodyNode(text){const box=el('div','blobby-dm-body'),s=String(text||''),re=/(https:\/\/[^\s<]+)/g;let last=0,m;while((m=re.exec(s))){if(m.index>last)box.append(document.createTextNode(s.slice(last,m.index)));try{const u=new URL(m[0]);const a=el('a','',u.href);a.href=u.href;a.target='_blank';a.rel='noopener noreferrer';box.append(a);}catch{box.append(document.createTextNode(m[0]));}last=re.lastIndex;}if(last<s.length)box.append(document.createTextNode(s.slice(last)));return box;}
-  function attachmentNode(m){const wrap=el('div','blobby-dm-media');if(m.message_type==='image'){const img=el('img');img.alt=m.attachment_name||'Shared image';img.loading='lazy';img.onclick=()=>openLightbox(m,img);wrap.append(img);signedUrlFor(m).then(url=>{if(url)img.src=url;});}else{const row=el('div','blobby-dm-file');row.append(el('span','blobby-dm-file-icon','📄'));const c=el('span','blobby-dm-file-copy');c.append(el('strong','',m.attachment_name||'Attachment'),el('small','',humanBytes(m.attachment_size)));const a=el('button','','Open');a.type='button';a.onclick=async()=>{const url=await signedUrlFor(m);if(url)window.open(url,'_blank','noopener,noreferrer');};row.append(c,a);wrap.append(row);}return wrap;}
+  function attachmentNode(m){const wrap=el('div','blobby-dm-media');if(m.message_type==='image'){const img=el('img');img.alt=m.attachment_name||'Shared image';img.loading='lazy';img.onclick=()=>openLightbox(m,img);wrap.append(img);signedUrlFor(m).then(url=>{if(url)img.src=url;});}else{const row=el('div','blobby-dm-file');const fileIcon=el('span','blobby-dm-file-icon');fileIcon.innerHTML='<svg class="ui-icon" aria-hidden="true"><use href="#i-file"></use></svg>';row.append(fileIcon);const c=el('span','blobby-dm-file-copy');c.append(el('strong','',m.attachment_name||'Attachment'),el('small','',humanBytes(m.attachment_size)));const a=el('button','','Open');a.type='button';a.onclick=async()=>{const url=await signedUrlFor(m);if(url)window.open(url,'_blank','noopener,noreferrer');};row.append(c,a);wrap.append(row);}return wrap;}
   async function signedUrlFor(m){const key=`${m.message_type}:${m.attachment_path}`,cached=state.signedUrls.get(key);if(cached&&cached.until>Date.now())return cached.url;const bucket=m.message_type==='image'?'chat-dm-images':'chat-dm-files';const {data,error}=await state.supabase.storage.from(bucket).createSignedUrl(m.attachment_path,3600);if(error)return'';state.signedUrls.set(key,{url:data.signedUrl,until:Date.now()+3300000});return data.signedUrl;}
   async function openLightbox(m,img){const url=img.src||await signedUrlFor(m);if(!url)return;ui.lightboxImg.src=url;ui.lightboxImg.alt=m.attachment_name||'Shared image';ui.lightbox.hidden=false;}
   function reactionNode(m){const list=state.reactions.get(m.id)||[];if(!list.length)return null;const grouped=new Map();for(const r of list){if(!grouped.has(r.emoji))grouped.set(r.emoji,[]);grouped.get(r.emoji).push(r);}const box=el('div','blobby-dm-reactions');for(const [emoji,rows] of grouped){const b=el('button','blobby-dm-reaction',`${emoji} ${rows.length}`);b.type='button';b.dataset.mine=String(rows.some(r=>r.profile_id===currentProfileId()));b.onclick=()=>toggleReaction(m,emoji);box.append(b);}return box;}
