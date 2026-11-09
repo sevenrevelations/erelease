@@ -1,5 +1,4 @@
 /* Blobby Direct Messages — compact desktop messaging */
-body[data-license-state]:not([data-license-state="unlocked"]) .blobby-dm-root{display:none!important}
 .blobby-dm-root{--msg-line:color-mix(in srgb,var(--line) 82%,transparent);position:fixed;inset:0;z-index:195;pointer-events:none;color:var(--ink);font-family:inherit}
 .blobby-dm-backdrop{position:absolute;inset:0;background:rgba(3,5,9,.72);opacity:0;transition:opacity var(--ui-fast,140ms) ease}
 .blobby-dm-shell{position:absolute;left:50%;top:50%;width:min(1040px,96vw);height:min(760px,94svh);display:grid;grid-template-columns:248px minmax(0,1fr);overflow:hidden;border:1px solid var(--msg-line);border-radius:var(--ui-r4,10px);background:var(--panel);box-shadow:0 18px 55px rgba(0,0,0,.36);opacity:0;transform:translate(-50%,-49%);transition:opacity var(--ui-fast,140ms) ease,transform var(--ui-fast,140ms) ease;pointer-events:none}

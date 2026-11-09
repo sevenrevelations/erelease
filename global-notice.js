@@ -10,12 +10,11 @@
   const write=(key,value)=>{try{localStorage.setItem(key,JSON.stringify(value))}catch{}};
   const safeUrl=v=>{try{const u=new URL(String(v||''),location.href);return u.protocol==='https:'?u.href:''}catch{return''}};
   const configured=()=>/^https:\/\/[a-z0-9-]+\.supabase\.co\/?$/i.test(String(C.SUPABASE_URL||''))&&String(C.SUPABASE_PUBLISHABLE_KEY||'').length>20;
-  const unlocked=()=>document.body?.dataset?.licenseState==='unlocked'||window.BlobbyLicense?.state?.().unlocked===true;
 
   function ensureRoot(){
     if(root?.isConnected)return root;
     root=document.createElement('div');root.className='bga-root';root.hidden=true;
-    root.innerHTML=`<div class="bga-backdrop" data-close="later"></div><section class="bga-card" role="dialog" aria-modal="true" aria-labelledby="bgaTitle"><button class="bga-x" type="button" aria-label="Remind me later"><svg class="ui-icon" aria-hidden="true"><use href="#i-close"></use></svg></button><div class="bga-kicker"></div><h2 id="bgaTitle"></h2><p class="bga-message"></p><div class="bga-version" hidden></div><div class="bga-actions"><a class="bga-link" target="_blank" rel="noopener noreferrer" hidden></a><button class="bga-ack" type="button">Acknowledge</button><button class="bga-later" type="button">Remind me later</button></div></section><section class="bga-banner" role="status"><div><strong></strong><span></span></div><div class="bga-banner-actions"><a target="_blank" rel="noopener noreferrer" hidden></a><button type="button" data-ack>Got it</button><button type="button" data-close="later" aria-label="Remind me later"><svg class="ui-icon" aria-hidden="true"><use href="#i-close"></use></svg></button></div></section>`;
+    root.innerHTML=`<div class="bga-backdrop" data-close="later"></div><section class="bga-card" role="dialog" aria-modal="true" aria-labelledby="bgaTitle"><button class="bga-x" type="button" aria-label="Remind me later"><svg class="ui-icon" aria-hidden="true"><use href="#i-close"></use></svg></button><div class="bga-kicker"></div><h2 id="bgaTitle"></h2><p class="bga-message"></p><div class="bga-version" hidden></div><div class="bga-actions"><button class="bga-link" type="button" hidden></button><button class="bga-ack" type="button">Acknowledge</button><button class="bga-later" type="button">Remind me later</button></div></section><section class="bga-banner" role="status"><div><strong></strong><span></span></div><div class="bga-banner-actions"><button type="button" data-link hidden></button><button type="button" data-ack>Got it</button><button type="button" data-close="later" aria-label="Remind me later"><svg class="ui-icon" aria-hidden="true"><use href="#i-close"></use></svg></button></div></section>`;
     document.body.append(root);
     root.querySelector('.bga-x').onclick=()=>hideForSession();
     root.querySelector('.bga-later').onclick=()=>hideForSession();
@@ -30,6 +29,22 @@
   function isHiddenThisSession(a){try{return sessionStorage.getItem(SESSION_KEY)==ackToken(a)}catch{return false}}
   function markSessionHidden(a){try{sessionStorage.setItem(SESSION_KEY,ackToken(a))}catch{}}
 
+  async function copyText(value){
+    const text=String(value||'');if(!text)return false;
+    try{if(navigator.clipboard?.writeText){await navigator.clipboard.writeText(text);return true;}}catch{}
+    try{const area=document.createElement('textarea');area.value=text;area.setAttribute('readonly','');area.style.position='fixed';area.style.opacity='0';area.style.pointerEvents='none';document.body.append(area);area.select();const ok=document.execCommand('copy');area.remove();return !!ok;}catch{return false;}
+  }
+  function copyNotification(){
+    const message='update link copied to clipboard!';
+    const region=document.getElementById('toastRegion');
+    if(region){const n=document.createElement('div');n.className='toast';n.textContent=message;region.append(n);setTimeout(()=>{n.style.opacity='0';n.style.transform='translateY(5px)';setTimeout(()=>n.remove(),180);},2200);return;}
+    const n=document.createElement('div');n.className='bga-copy-toast';n.textContent=message;document.body.append(n);setTimeout(()=>n.remove(),2400);
+  }
+  async function copyAnnouncementLink(url){
+    if(!url)return;const ok=await copyText(url);if(!ok){window.prompt('Copy this update link:',url);return;}
+    acknowledge();copyNotification();
+  }
+
   function typeLabel(t){return t==='update'?'Update available':t==='maintenance'?'Maintenance':t==='important'?'Important':'Announcement'}
   function render(a){
     current=a;const r=ensureRoot();
@@ -39,10 +54,10 @@
     r.querySelector('#bgaTitle').textContent=a.title||'Blobby announcement';
     r.querySelector('.bga-message').textContent=a.message||'';
     const version=r.querySelector('.bga-version');version.hidden=!a.version_label;version.textContent=a.version_label?`Version ${a.version_label}`:'';
-    const url=safeUrl(a.link_url);const label=String(a.link_label||'View details').slice(0,60);
-    const link=r.querySelector('.bga-link');link.hidden=!url;link.onclick=url?()=>acknowledge():null;if(url){link.href=url;link.textContent=label;}
+    const url=safeUrl(a.link_url);const label=String(a.link_label||(a.announcement_type==='update'?'Copy update link':'Copy link')).slice(0,60);
+    const link=r.querySelector('.bga-link');link.hidden=!url;link.onclick=url?()=>copyAnnouncementLink(url):null;if(url)link.textContent=label;
     const bstrong=r.querySelector('.bga-banner strong');const bspan=r.querySelector('.bga-banner span');bstrong.textContent=a.title||'Blobby announcement';bspan.textContent=a.message||'';
-    const blink=r.querySelector('.bga-banner a');blink.hidden=!url;blink.onclick=url?()=>acknowledge():null;if(url){blink.href=url;blink.textContent=label;}
+    const blink=r.querySelector('.bga-banner [data-link]');blink.hidden=!url;blink.onclick=url?()=>copyAnnouncementLink(url):null;if(url)blink.textContent=label;
     r.hidden=false;
     document.documentElement.classList.toggle('bga-modal-open',(a.display_mode||'popup')==='popup');
   }
@@ -61,7 +76,7 @@
   }
 
   async function refresh(){
-    if(loading||!unlocked()||document.hidden)return;
+    if(loading||document.hidden)return;
     loading=true;
     try{
       const rows=await fetchActive();const now=Date.now();
@@ -74,10 +89,8 @@
   }
 
   function start(){clearInterval(timer);refresh();timer=setInterval(()=>{if(!document.hidden)refresh()},POLL_MS);}
-  window.addEventListener('blobby:license-unlocked',start);
-  window.addEventListener('blobby:license-locked',()=>{clearInterval(timer);closeUi();});
-  document.addEventListener('visibilitychange',()=>{if(!document.hidden&&unlocked())refresh();});
-  window.addEventListener('focus',()=>{if(unlocked())refresh();});
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden)refresh();});
+  window.addEventListener('focus',refresh);
   window.BlobbyGlobalAnnouncements={refresh,acknowledgeCurrent:acknowledge};
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>{if(unlocked())start()},{once:true});else if(unlocked())start();
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
 })();

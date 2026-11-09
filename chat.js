@@ -237,7 +237,6 @@
     window.addEventListener('online',()=>{setConnection('connecting','Reconnecting…'); if(state.open)ensureConnected(true);});
     window.addEventListener('offline',()=>setConnection('offline','Offline'));
     document.addEventListener('visibilitychange',()=>{if(!state.open)return;if(document.visibilityState==='visible')ensureConnected();else unsubscribeGeneral();});
-    window.addEventListener('blobby:license-locked',disconnectChat);
     window.addEventListener('blobby:profile-updated',e=>{
       const p=e.detail?.profile;if(!p?.id)return;
       const merged={...(state.profiles.get(p.id)||{}),...p};state.profiles.set(p.id,merged);
@@ -345,8 +344,6 @@
   }
 
   async function openChat(){
-    if(document.body.dataset.licenseState!=='unlocked') return;
-
     // Never stack Profile over/under Chat.
     if(window.BlobbyProfile?.state?.().open) window.BlobbyProfile.close();
 
@@ -414,7 +411,7 @@
       session=data.session;
     }
     state.session=session;
-    await bindLicenseToChat();
+    await bindKeylessChat();
     await loadBlocks();
     state.identityReady=true;
     return {supabase:state.supabase,session:state.session,profile:state.profile};
@@ -436,15 +433,13 @@
     }finally{state.connecting=false;}
   }
 
-  async function bindLicenseToChat(){
-    const creds=window.BlobbyLicense?.chatCredentials?.();
-    if(!creds?.token||!creds?.installationId) throw Error('Your blobby.vip access needs to be verified before chat can connect.');
+  async function bindKeylessChat(){
     const {data:{session}}=await state.supabase.auth.getSession();
     if(!session?.access_token)throw Error('Chat session unavailable.');
-    const res=await fetch(String(CONFIG.SUPABASE_URL).replace(/\/$/,'')+'/functions/v1/chat-public',{method:'POST',headers:{'Content-Type':'application/json','apikey':CONFIG.SUPABASE_PUBLISHABLE_KEY,'Authorization':'Bearer '+session.access_token},body:JSON.stringify({action:'bind',activationToken:creds.token,installationId:creds.installationId})});
-    let body={}; try{body=await res.json();}catch{}
-    if(!res.ok||!body.ok)throw Error(body.code==='chat_banned'?'Your chat access is banned.':body.code==='license_invalid'?'Your blobby.vip access could not be verified for chat.':body.message||body.code||'Chat authorization failed.');
-    state.profile=body.profile; state.profiles.set(body.profile.id,body.profile); fillSettings(); renderSelfCard();
+    const {data,error}=await state.supabase.rpc('chat_keyless_bind');
+    if(error)throw Error(/banned/i.test(error.message||'')?'Your chat access is banned.':error.message||'Chat authorization failed.');
+    if(!data?.id)throw Error('Chat profile could not be created. Run the keyless chat migration in Supabase.');
+    state.profile=data; state.profiles.set(data.id,data); fillSettings(); renderSelfCard();
   }
 
   async function loadProfiles(){
@@ -857,10 +852,10 @@
   function syncUnread(){if(!ui.unread)return;ui.unread.hidden=state.unread<=0;ui.unread.textContent=state.unread>99?'99+':String(state.unread);}
 
   async function disconnectChat(){
-    state.ready=false;state.identityReady=false;state.connected=false;state.session=null;state.profile=null;state.messages=[];state.announcements=[];state.announcementsLoaded=false;state.profiles.clear();state.onlineIds.clear();await unsubscribeGeneral();setConnection('offline','Access locked');if(state.open)closeChat();
+    state.ready=false;state.identityReady=false;state.connected=false;state.session=null;state.profile=null;state.messages=[];state.announcements=[];state.announcementsLoaded=false;state.profiles.clear();state.onlineIds.clear();await unsubscribeGeneral();setConnection('offline','Disconnected');if(state.open)closeChat();
   }
 
-  function boot(){createUI();if(document.body.dataset.licenseState==='unlocked')setConnection('offline','Open chat to connect');window.addEventListener('blobby:license-unlocked',()=>setConnection('offline','Open chat to connect'));}
+  function boot(){createUI();setConnection('offline','Open chat to connect');}
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
 
   window.BlobbyChat=Object.freeze({open:openChat,close:closeChat,toggle:toggleChat,backend:async()=>{const x=await ensureIdentity(false);return {supabase:x.supabase,session:x.session,profile:{...x.profile}};},profiles:()=>[...state.profiles.values()].map(p=>({...p})),upsertProfile:p=>{if(p?.id)state.profiles.set(p.id,{...(state.profiles.get(p.id)||{}),...p});},state:()=>({open:state.open,ready:state.ready,channel:state.activeChannel,online:state.onlineIds.size,profile:state.profile?{id:state.profile.id,displayName:state.profile.display_name,role:state.profile.role}:null})});

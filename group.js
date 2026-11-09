@@ -96,7 +96,6 @@
     ui.fileInput.onchange=()=>{const f=ui.fileInput.files?.[0];ui.fileInput.value='';if(f)uploadAndSend(f,false);};ui.photoInput.onchange=()=>{const f=ui.photoInput.files?.[0];ui.photoInput.value='';if(f)uploadAndSend(f,true);};
     ui.lightbox.onclick=e=>{if(e.target===ui.lightbox||e.target.tagName==='BUTTON')ui.lightbox.hidden=true;};
     document.addEventListener('keydown',e=>{if(e.key==='Escape'&&state.open){if(!ui.picker.hidden){closePicker();return;}closeGroup();}});
-    window.addEventListener('blobby:license-locked',disconnectGroup);
     window.addEventListener('blobby:profile-updated',e=>{const p=e.detail?.profile;if(!p?.id)return;state.profiles.set(p.id,{...(state.profiles.get(p.id)||{}),...p});if(p.id===currentProfileId())state.profile={...state.profile,...p};if(state.open){renderConversationList();if(state.activeId)renderThreadHead();}});
   }
 
@@ -114,7 +113,6 @@
   }
 
   async function openGroup(){
-    if(document.body.dataset.licenseState!=='unlocked')return;
     if(!ui.root)createUI();
     if(window.BlobbyChat?.state?.().open)window.BlobbyChat.close();if(window.BlobbyDM?.state?.().open)window.BlobbyDM.close();
     state.open=true;ui.root.dataset.open='true';ui.shell.setAttribute('aria-hidden','false');document.documentElement.dataset.groupOpen='true';appExpand();

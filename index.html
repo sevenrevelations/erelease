@@ -16,33 +16,31 @@
   <meta name="description" content="blobby.vip — a fast, customizable browser controller for MIT App Inventor.">
   <title>blobby.vip</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='18' fill='%238da2ff'/%3E%3Ctext x='17' y='47' font-size='48' font-family='Arial' font-weight='700' fill='%23080a12'%3Eb%3C/text%3E%3C/svg%3E">
-  <link rel="stylesheet" href="./style.css?v=product-redesign-20261104-1">
-  <link rel="stylesheet" href="./sidebar.css?v=product-redesign-20261104-1">
-  <link rel="stylesheet" href="./license.css?v=product-redesign-20261104-1">
-  <link rel="stylesheet" href="./chat.css?v=product-redesign-20261104-1">
-  <link rel="stylesheet" href="./profile.css?v=product-redesign-20261104-1">
-  <link rel="stylesheet" href="./chat-shell-fix.css?v=product-redesign-20261104-1">
-  <link rel="stylesheet" href="./dm.css?v=product-redesign-20261104-1">
-  <link rel="stylesheet" href="./group.css?v=product-redesign-20261104-1">
-  <link rel="stylesheet" href="./leaderboard.css?v=product-redesign-20261104-1">
-  <link rel="stylesheet" href="./performance.css?v=product-redesign-20261104-1">
-  <link rel="stylesheet" href="./global-notice.css?v=product-redesign-20261104-1">
-  <script src="./core.js?v=product-redesign-20261104-1"></script>
-  <script src="./performance.js?v=product-redesign-20261104-1"></script>
-  <script src="./themes.js?v=product-redesign-20261104-1"></script>
-  <script src="./browser-bridge.js?v=product-redesign-20261104-1"></script>
-  <script src="./effects.js?v=product-redesign-20261104-1"></script>
-  <script src="./cursor.js?v=product-redesign-20261104-1"></script>
-  <script src="./layout.js?v=product-redesign-20261104-1"></script>
-  <script src="./config.js?v=product-redesign-20261104-1"></script>
-  <script src="./features.js?v=product-redesign-20261104-1" defer></script>
-  <script src="./sidebar.js?v=product-redesign-20261104-1" defer></script>
-  <script src="./license.js?v=product-redesign-20261104-1" defer></script>
-  <script src="./global-notice.js?v=product-redesign-20261104-1" defer></script>
-  <script src="./chat.js?v=product-redesign-20261104-1" defer></script>
-  <script src="./activity.js?v=product-redesign-20261104-1" defer></script>
+  <link rel="stylesheet" href="./style.css?v=product-redesign-keyless-20261109-1">
+  <link rel="stylesheet" href="./sidebar.css?v=product-redesign-keyless-20261109-1">
+  <link rel="stylesheet" href="./chat.css?v=product-redesign-keyless-20261109-1">
+  <link rel="stylesheet" href="./profile.css?v=product-redesign-keyless-20261109-1">
+  <link rel="stylesheet" href="./chat-shell-fix.css?v=product-redesign-keyless-20261109-1">
+  <link rel="stylesheet" href="./dm.css?v=product-redesign-keyless-20261109-1">
+  <link rel="stylesheet" href="./group.css?v=product-redesign-keyless-20261109-1">
+  <link rel="stylesheet" href="./leaderboard.css?v=product-redesign-keyless-20261109-1">
+  <link rel="stylesheet" href="./performance.css?v=product-redesign-keyless-20261109-1">
+  <link rel="stylesheet" href="./global-notice.css?v=product-redesign-keyless-20261109-1">
+  <script src="./core.js?v=product-redesign-keyless-20261109-1"></script>
+  <script src="./performance.js?v=product-redesign-keyless-20261109-1"></script>
+  <script src="./themes.js?v=product-redesign-keyless-20261109-1"></script>
+  <script src="./browser-bridge.js?v=product-redesign-keyless-20261109-1"></script>
+  <script src="./effects.js?v=product-redesign-keyless-20261109-1"></script>
+  <script src="./cursor.js?v=product-redesign-keyless-20261109-1"></script>
+  <script src="./layout.js?v=product-redesign-keyless-20261109-1"></script>
+  <script src="./config.js?v=product-redesign-keyless-20261109-1"></script>
+  <script src="./features.js?v=product-redesign-keyless-20261109-1" defer></script>
+  <script src="./sidebar.js?v=product-redesign-keyless-20261109-1" defer></script>
+  <script src="./global-notice.js?v=product-redesign-keyless-20261109-1" defer></script>
+  <script src="./chat.js?v=product-redesign-keyless-20261109-1" defer></script>
+  <script src="./activity.js?v=product-redesign-keyless-20261109-1" defer></script>
 </head>
-<body data-license-state="booting" data-license-ui="idle">
+<body>
   <svg class="ui-icon-sprite" aria-hidden="true">
     <symbol id="i-command" viewBox="0 0 24 24"><path d="M9 6.5H6.5a2.5 2.5 0 1 1 2.5-2.5V20a2.5 2.5 0 1 1-2.5-2.5H17.5A2.5 2.5 0 1 1 15 20V4a2.5 2.5 0 1 1 2.5 2.5Z"/></symbol>
     <symbol id="i-grid" viewBox="0 0 24 24"><rect x="4" y="4" width="6" height="6" rx="1"/><rect x="14" y="4" width="6" height="6" rx="1"/><rect x="4" y="14" width="6" height="6" rx="1"/><rect x="14" y="14" width="6" height="6" rx="1"/></symbol>
@@ -76,23 +74,6 @@
     <symbol id="i-users" viewBox="0 0 24 24"><circle cx="9" cy="9" r="3"/><circle cx="17" cy="10" r="2.3"/><path d="M3.5 19c.5-3.2 2.4-5 5.5-5s5 1.8 5.5 5M14.5 15c2.8-.6 5 .8 6 3"/></symbol>
     <symbol id="i-file" viewBox="0 0 24 24"><path d="M6 3.5h8l4 4V20H6Z"/><path d="M14 3.5V8h4"/></symbol>
   </svg>
-  <section id="licenseGate" class="license-gate" aria-labelledby="licenseTitle">
-    <div class="license-card">
-      <div class="license-brand"><span class="license-brand-dot" aria-hidden="true"></span><span>blobby.vip</span></div>
-      <h1 id="licenseTitle">Welcome.</h1>
-      <p>Enter your access key to continue to blobby.vip.</p>
-      <form id="licenseForm" class="license-form" novalidate>
-        <label for="licenseKeyInput">Access key</label>
-        <input id="licenseKeyInput" class="license-key-input" type="text" inputmode="text" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="39" placeholder="BLOBBY-____-____-____-____" aria-describedby="licenseStatus licenseDetail">
-        <button id="licenseSubmit" class="license-submit" type="submit">Unlock blobby</button>
-      </form>
-      <div class="license-feedback" role="status" aria-live="polite">
-        <strong id="licenseStatus">Starting secure access…</strong>
-        <span id="licenseDetail"></span>
-      </div>
-      <div class="license-meta"><span>One key · one active installation</span><a id="licenseSupport" href="#" hidden>Contact admin</a></div>
-    </div>
-  </section>
   <div id="backgroundLayer" class="background-layer" aria-hidden="true"></div>
   <div id="ambientLayer" class="ambient-layer" aria-hidden="true">
     <div class="aurora-layer"></div><div class="fog-layer"></div><div class="wave-layer"></div><div class="cloud-layer"></div><div class="digital-grid-layer"></div><div class="neon-horizon-layer"></div><div class="liquid-layer"></div><div class="light-rays-layer"></div>

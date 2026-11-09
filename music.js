@@ -782,10 +782,7 @@
       else close();
     });
 
-    window.addEventListener('blobby:license-locked', () => {
-      pauseEverything();
-      close();
-    });
+
 
     setView('search');
     ensurePlaylistsLoaded().catch(() => { state.playlistsReady = true; });
@@ -2014,7 +2011,6 @@
   }
 
   function open() {
-    if (document.body.dataset.licenseState !== 'unlocked') return;
     if (!ui.root) build();
 
     if (window.BlobbyChat?.state?.().open) window.BlobbyChat.close();

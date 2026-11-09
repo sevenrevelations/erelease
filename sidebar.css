@@ -1,5 +1,4 @@
 /* Blobby navigation: flat desktop rail, no floating dock. */
-body[data-license-state]:not([data-license-state="unlocked"]) .blobby-sidebar-root{display:none!important}
 .blobby-sidebar-root{position:fixed;inset:0;z-index:165;pointer-events:none;color:var(--ink);font-family:inherit}
 .blobby-sidebar-rail{position:fixed;left:0;top:0;bottom:0;width:48px;display:none;flex-direction:column;align-items:center;gap:2px;padding:38px 5px 6px;overflow-y:auto;overscroll-behavior:contain;border-right:1px solid var(--ui-border,rgba(255,255,255,.1));background:color-mix(in srgb,var(--bg) 96%,var(--panel));pointer-events:auto}
 html[data-ui-mode="home"] .blobby-sidebar-rail,html[data-ui-mode="sidebar"] .blobby-sidebar-rail{display:flex}
